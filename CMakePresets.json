@@ -1,0 +1,91 @@
+{
+  "version": 5,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 22,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default",
+      "generator": "Ninja",
+      "binaryDir": "build",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "generator": "Ninja",
+      "binaryDir": "release-build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "vs",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "vs-build"
+    },
+    {
+      "name": "Xcode",
+      "generator": "Xcode",
+      "binaryDir": "xcode-build"
+    },
+    {
+      "name": "ios-simulator",
+      "displayName": "iOS Standalone (Simulator)",
+      "description": "Standalone-only iOS app for the iPad Simulator. Xcode is multi-config, so pick the configuration at build time. Build with: cmake --build build-ios --config Release --target TONE3000_Standalone -- -sdk iphonesimulator",
+      "generator": "Xcode",
+      "binaryDir": "build-ios",
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "iOS",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "16.0"
+      }
+    },
+    {
+      "name": "ios-device",
+      "displayName": "iOS Standalone (device)",
+      "description": "Same as ios-simulator but code signed for a physical iPad. Build with -sdk iphoneos -allowProvisioningUpdates; add -DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM=<id> if Xcode cannot pick your team.",
+      "inherits": "ios-simulator",
+      "binaryDir": "build-ios-device",
+      "cacheVariables": {
+        "CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY": "Apple Development"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default",
+      "output": { "outputOnFailure": true },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "release",
+      "inherits": "default",
+      "configurePreset": "release"
+    },
+    {
+      "name": "vs",
+      "inherits": "default",
+      "configurePreset": "vs"
+    },
+    {
+      "name": "Xcode",
+      "inherits": "default",
+      "configurePreset": "Xcode",
+      "configuration": "Debug"
+    }
+  ]
+}

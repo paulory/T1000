@@ -1,0 +1,54 @@
+name: Feature request
+description: A change you'd like to see in the plugin.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Sign-in, catalog browse, and anything else on tone3000.com go to [tone-3000/tone-3000-feature-requests](https://github.com/tone-3000/tone-3000-feature-requests/issues), not here.
+
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Search
+      options:
+        - label: I searched existing issues and this is not a duplicate
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is hard or impossible today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How you would like it to work.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: What you already tried, or another approach you would also accept.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Sound / chain
+        - DAW / format
+        - Interface
+        - Presets / browsing tones
+        - MIDI
+        - Installer
+        - Other
+    validations:
+      required: true

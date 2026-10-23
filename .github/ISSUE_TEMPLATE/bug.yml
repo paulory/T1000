@@ -1,0 +1,145 @@
+name: Bug report
+description: Something in the plugin isn't working.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Sign-in, browsing tones, and anything else on tone3000.com go to [tone-3000/tone-3000-feature-requests](https://github.com/tone-3000/tone-3000-feature-requests/issues), not here.
+
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Search
+      options:
+        - label: I searched existing issues and this is not a duplicate
+          required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What you clicked, loaded, or played before it went wrong.
+      placeholder: |
+        1. Open TONE3000 in …
+        2. Load this preset / add this tone …
+        3. …
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Environment
+
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version
+      description: Bottom of Settings > Plugin Settings (TONE3000 v…).
+      placeholder: v0.0.2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: How did you get the plugin?
+      options:
+        - tone3000.com/plugin
+        - GitHub release
+        - Built from source
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - macOS
+        - Windows
+        - Linux
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version
+      placeholder: macOS 15.6, Windows 11, Ubuntu 24.04
+    validations:
+      required: true
+
+  - type: dropdown
+    id: format
+    attributes:
+      label: Plugin format
+      description: The kind of plugin your DAW loaded. Standalone is the TONE3000 app.
+      multiple: true
+      options:
+        - VST3
+        - AU
+        - AAX
+        - CLAP
+        - LV2
+        - Standalone
+    validations:
+      required: true
+
+  - type: input
+    id: host
+    attributes:
+      label: DAW
+      description: Name and version. Write Standalone if you only used the TONE3000 app.
+      placeholder: Pro Tools 2025.6, Reaper 7.22, Logic 11.1, Standalone
+    validations:
+      required: true
+
+  - type: input
+    id: audio-setup
+    attributes:
+      label: Sample rate and buffer
+      description: From your DAW's audio settings. Helpful when the sound is wrong or it crackles.
+      placeholder: 48 kHz, 64 samples
+
+  - type: dropdown
+    id: standalone
+    attributes:
+      label: Does it happen in the TONE3000 app (Standalone) too?
+      options:
+        - "Yes"
+        - "No"
+        - Did not try
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Logs
+
+        In the plugin go to **Settings (gear) > Plugin Settings > Diagnostics > Copy Logs**, then paste below. That file is usually more useful than a screenshot.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste what Copy Logs put on your clipboard.
+      render: shell
+
+  - type: textarea
+    id: extras
+    attributes:
+      label: Screenshots or anything else
+      description: Drag images onto this field if it helps show the problem.

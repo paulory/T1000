@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- Installer.app renders these panes (welcome/readme) with its
+     legacy HTML text importer, not a webview: the charset meta is required
+     (it falls back to Latin-1 without it), CSS backgrounds and borders are
+     ignored, and the pane follows the system appearance, so never hard-code
+     text colors. Keep the markup to paragraphs, tables, and font styling. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body
+    style="
+      font-family: -apple-system, system-ui, sans-serif;
+      line-height: 1.5;
+      margin: 0;
+      padding: 4px 2px;
+    "
+  >
+    <p style="margin: 0;">
+      You will be guided through the steps necessary to install the TONE3000
+      plugin.
+    </p>
+  </body>
+</html>
