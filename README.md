@@ -23,9 +23,8 @@ A fork of the open-source [TONE3000 plugin](https://github.com/tone-3000/tone300
   shares its presets folder and settings.
 - macOS builds come from `.github/workflows/t1000-macos.yml` (Actions →
   T1000 macOS → artifact `T1000-macos`: a `.pkg` installer and a `.zip`).
-  They are ad-hoc signed: on first launch right-click → Open. TONE3000
-  sign-in needs a publishable key in the `T3K_PUBLISHABLE_KEY` repository
-  secret; local files and hosted plugins work without it.
+  They are ad-hoc signed: on first launch right-click → Open. The
+  TONE3000 publishable key used for sign-in is set in that workflow.
 
 The upstream README follows.
 

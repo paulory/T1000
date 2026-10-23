@@ -7,9 +7,9 @@
 # Unsigned by a Developer ID, so the first launch needs right-click > Open
 # (or `xattr -dr com.apple.quarantine` on the bundles).
 #
-# Optional repository secret T3K_PUBLISHABLE_KEY (a TONE3000 publishable key,
-# tone3000.com > Settings > API Keys) enables TONE3000 sign-in and the tone
-# browser. Without it local .nam / IR files and hosted plugins still work.
+# TONE3000 sign-in and the tone browser use the publishable key set below
+# (tone3000.com > Settings > API Keys); a T3K_PUBLISHABLE_KEY repository
+# secret overrides it.
 
 name: T1000 macOS
 
@@ -25,7 +25,9 @@ jobs:
   build:
     runs-on: macos-14
     env:
-      T3K_PUBLISHABLE_KEY: ${{ secrets.T3K_PUBLISHABLE_KEY }}
+      # Publishable key = public OAuth client_id (it ships inside the app
+      # anyway). A T3K_PUBLISHABLE_KEY repository secret overrides it.
+      T3K_PUBLISHABLE_KEY: ${{ secrets.T3K_PUBLISHABLE_KEY || 't3k_pub_In1NFT2QS7DFVKgl00FAfdbju-Q-Tf9G' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
