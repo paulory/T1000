@@ -12,6 +12,7 @@
 #include "widgets/BlockLed.h"
 #include "widgets/ChromeIconButton.h"
 #include "widgets/EnergyGlow.h"
+#include "widgets/Knob.h"
 #include "widgets/LoadingDots.h"
 #include "widgets/RetryLoadBadge.h"
 #include "widgets/ToneImage.h"
@@ -95,6 +96,14 @@ private:
   // the tile is a drop target.
   juce::Component ledSlot_;
   BlockLed led_;
+  // Always-on Out level for a loaded block (bottom left, on a dark plate so
+  // it reads on any artwork). Same param as the block card's Out knob.
+  class OutPlate : public juce::Component {
+  public:
+    void paint(juce::Graphics& g) override;
+  };
+  OutPlate outPlate_;
+  Knob out_;
   HoverWatcher hover_{*this};
 };
 

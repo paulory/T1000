@@ -178,7 +178,7 @@ std::map<Key, String> buildTable() {
 
   // Chain gallery
   t[Key::addTile] =
-      U("Add Tone: browse TONE3000 for this slot, or drop a .nam or IR .wav file (or a folder of them). Right-click: paste / load file · drag: move.");
+      U("Add: pick a TONE3000 tone or a VST plugin for this slot, or drop a .nam or IR .wav file (or a folder of them). Right-click: paste / load file · drag: move.");
   t[Key::closeToneBrowser] = U("Close: back to the chain.");
   t[Key::copyBlock] = U("Copy: copy this block (tone, model and all settings).");
   t[Key::pasteBlock] = U("Paste: add a copy of the copied block in this slot.");
@@ -188,6 +188,8 @@ std::map<Key, String> buildTable() {
       U("Load Folder: pick a folder of .nam or .wav files; loads as one multi-model block.");
   t[Key::loadPluginTile] =
       U("Load Plugin: put a VST3 or AU effect from this computer in this slot.");
+  t[Key::addTone3000] = U("TONE3000: browse the TONE3000 catalog for this slot.");
+  t[Key::tileOut] = knobDesktop("Out", "This block's output level.");
   t[Key::managePlugins] = U("Plugins: scan for plugins on this computer, or clean up the list.");
   t[Key::openPluginEditor] = U("Open Plugin: show this plugin's own window.");
   t[Key::blockPower] = U("Power: bypass this block.");

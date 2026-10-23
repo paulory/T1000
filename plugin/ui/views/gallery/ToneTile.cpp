@@ -4,6 +4,7 @@
 #include "core/Fonts.h"
 #include "core/Help.h"
 #include "core/Icons.h"
+#include "core/KnobScale.h"
 #include "core/Paint.h"
 #include "core/Theme.h"
 
@@ -13,7 +14,25 @@ namespace {
 constexpr int kImageFadeMs = 200;
 constexpr float kDimmedImage = 0.35f;
 const juce::Colour kStrip = juce::Colours::black.withAlpha(0.35f);
+constexpr int kOutPad = 6;
+
+Knob::Options outKnobOptions() {
+  Knob::Options o;
+  o.label = "Out";
+  o.size = theme::kKnobSizeSecondary;
+  o.thumb = Knob::Thumb::secondary;
+  o.scale = &scales::gainDb();
+  o.defaultValue = 0.5f;
+  o.help = help::Key::tileOut;
+  o.labelBright = true;
+  return o;
+}
 }  // namespace
+
+void ToneTile::OutPlate::paint(juce::Graphics& g) {
+  g.setColour(juce::Colours::black.withAlpha(0.55f));
+  g.fillRoundedRectangle(getLocalBounds().toFloat(), 10.0f);
+}
 
 void ToneTile::Strip::paint(juce::Graphics& g) {
   g.setColour(kStrip);
@@ -28,7 +47,8 @@ ToneTile::ToneTile(Services& services, const ChainItem& block, int size)
       swap_(Icon::ArrowLeftRight, ChromeIconButton::Tone::plain, help::Key::swapTone),
       remove_(Icon::Trash2, ChromeIconButton::Tone::plain, help::Key::removeBlock),
       glow_(services.meters, MeterStore::blockOutId(block.blockId)),
-      led_(services.meters, MeterStore::blockOutId(block.blockId)) {
+      led_(services.meters, MeterStore::blockOutId(block.blockId)),
+      out_(outKnobOptions()) {
   image_.setCornerRadius(gallery::kTileCorner);
   image_.setGlow(glow_.glow());
   glow_.onChange = [this] { image_.setGlow(glow_.glow()); };
@@ -48,6 +68,12 @@ ToneTile::ToneTile(Services& services, const ChainItem& block, int size)
       onSwap(blockId());
   };
   remove_.onClick = [this] { this->services().chain.removeBlock(blockId()); };
+
+  out_.onChange = [this](float v) {
+    this->services().chain.setBlockParam(blockId(), "outputGain", static_cast<double>(v));
+  };
+  outPlate_.addAndMakeVisible(out_);
+  addChildComponent(outPlate_);
 
   addAndMakeVisible(ledSlot_);
   ledSlot_.addChildComponent(led_);
@@ -85,6 +111,8 @@ void ToneTile::syncState() {
   image_.setVisible(!armed);
   imageFade_.animateTo(enabled_ && !busy && !block_.loadFailed ? 1.0f : kDimmedImage, kImageFadeMs);
   dots_.setVisible(!armed && busy && !block_.loadFailed);
+  out_.setValue(static_cast<float>(block_.params.outputGain));
+  outPlate_.setVisible(!armed && block_.loaded);
   retry_.setVisible(!armed && block_.loadFailed);
   chrome_.setVisible(!armed);
   ledSlot_.setVisible(!armed);
@@ -147,6 +175,11 @@ void ToneTile::resized() {
   swap_.setBounds(remove_.getX() - kChromeGap - theme::kIconBoxSize, y, theme::kIconBoxSize,
                   theme::kIconBoxSize);
 
+  const int knobH = Knob::heightFor(theme::kKnobSizeSecondary);
+  const int plateW = theme::kKnobSizeSecondary + 2 * kOutPad + 8;
+  outPlate_.setBounds(kLedInset, getHeight() - kLedInset - knobH - 2 * kOutPad, plateW, knobH + 2 * kOutPad);
+  out_.setBounds(outPlate_.getLocalBounds().reduced(kOutPad));
+
   ledSlot_.setTopLeftPosition(getWidth() - kLedInset - BlockLed::kSize,
                               getHeight() - kLedInset - BlockLed::kSize);
 }
@@ -167,6 +200,7 @@ void ToneTile::paintOverChildren(juce::Graphics& g) {
   // Every plugin shares the rack glyph, so the tile names it.
   if (block_.tone.plugin && !dropArmed()) {
     auto label = getLocalBounds().reduced(8).removeFromBottom(36).withTrimmedRight(BlockLed::kSize + 4);
+    if (outPlate_.isVisible()) label.setLeft(outPlate_.getRight() + 8);
     g.setColour(theme::kWhite.withAlpha(enabled_ ? 0.9f : 0.45f));
     g.setFont(Fonts::sans(13.0f, true));
     g.drawFittedText(block_.tone.title, label, juce::Justification::bottomLeft, 2, 0.85f);

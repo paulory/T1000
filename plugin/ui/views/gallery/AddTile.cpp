@@ -30,7 +30,25 @@ void AddTile::setRouting(Routing routing) {
 void AddTile::setCanPaste(bool canPaste) { canPaste_ = canPaste; }
 
 void AddTile::open() {
-  if (onAdd) onAdd(blockId());
+  // Without plugin hosting there is nothing to choose: straight to TONE3000.
+  if (!services().hostedPlugins.available()) {
+    if (onAdd) onAdd(blockId());
+    return;
+  }
+  juce::Component::SafePointer<AddTile> self(this);
+  std::vector<ContextMenu::Item> choice{
+      {"TONE3000", Icon::Search, help::Key::addTone3000,
+       [this] { if (onAdd) onAdd(blockId()); }},
+      {"VST Plugin", Icon::Plus, help::Key::loadPluginTile,
+       [self] {
+         // The plugin list is a second menu: open it once this one closed.
+         juce::MessageManager::callAsync([self] {
+           if (self != nullptr) self->services().hostedPlugins.pick(self->blockId(), *self);
+         });
+       }},
+  };
+  const int size = tileSize();
+  openMenuWith(std::move(choice), {size / 2 - ContextMenu::kWidth / 2, size / 2 + 28});
 }
 
 std::vector<ContextMenu::Item> AddTile::menuItems() {

@@ -71,6 +71,9 @@ protected:
   virtual void travellingChanged(bool /*travelling*/) {}
 
   bool dropArmed() const { return dropArmed_; }
+  // Open the action sheet with `items` instead of menuItems() (the add
+  // tile's TONE3000 / VST Plugin choice).
+  void openMenuWith(std::vector<ContextMenu::Item> items, juce::Point<int> at);
   bool menuOpen() const { return menu_ != nullptr && menu_->isOpen(); }
   Services& services() { return services_; }
 

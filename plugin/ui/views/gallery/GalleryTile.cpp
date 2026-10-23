@@ -70,13 +70,15 @@ std::vector<ContextMenu::Item> GalleryTile::pluginLoadItems() {
 }
 
 // Menu
-void GalleryTile::openMenu(juce::Point<int> at) {
+void GalleryTile::openMenu(juce::Point<int> at) { openMenuWith(menuItems(), at); }
+
+void GalleryTile::openMenuWith(std::vector<ContextMenu::Item> items, juce::Point<int> at) {
   suppressClickUntilMs_ = juce::Time::currentTimeMillis() + kSuppressClickMs;
   if (auto* old = menu_.release()) {
     old->close();
     juce::MessageManager::callAsync([old] { delete old; });
   }
-  menu_ = std::make_unique<ContextMenu>(menuItems());
+  menu_ = std::make_unique<ContextMenu>(std::move(items));
   menu_->onDismiss = [this] { menuDismissedMs_ = juce::Time::currentTimeMillis(); };
   menu_->openAtPoint(*this, at);
 }
