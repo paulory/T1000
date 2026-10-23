@@ -31,8 +31,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      # Submodules by hand: NeuralAmpModelerCore pins Eigen on gitlab.com,
+      # which is often overloaded; fetch the same commit from the GitHub
+      # mirror instead. AudioDSPTools' own nested Eigen is never used.
+      - name: Submodules
+        run: |
+          git submodule update --init --depth 1 plugin/AudioDSPTools plugin/NeuralAmpModelerCore
+          cd plugin/NeuralAmpModelerCore
+          git config submodule.Dependencies/eigen.url https://github.com/live-clones/eigen
+          git submodule update --init Dependencies/eigen Dependencies/AudioDSPTools
 
       - name: Cache CPM dependencies
         uses: actions/cache@v4
