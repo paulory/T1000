@@ -104,6 +104,10 @@ struct ToneSummary {
   // Models this plugin loads: A2 for NAM, otherwise models_count.
   int catalogModelCount() const;
   bool isNam() const { return format.equalsIgnoreCase("nam"); }
+
+  // A hosted VST3 / AU plugin block: title = plugin name, user = vendor,
+  // format = "VST3" / "AU".
+  bool plugin = false;
 };
 
 struct ChainItem {

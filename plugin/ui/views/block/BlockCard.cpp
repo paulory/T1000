@@ -158,8 +158,12 @@ void BlockCard::buildHeader() {
   addChildComponent(info_);
   share_.onClick = [this] { share(); };
   addChildComponent(share_);
+  // Plugin blocks have nothing to swap; the slot opens the plugin window.
   swap_.onClick = [this] {
-    if (onSwap) onSwap();
+    if (isPlugin())
+      services_.hostedPlugins.openEditor(block_.blockId);
+    else if (onSwap)
+      onSwap();
   };
   addAndMakeVisible(swap_);
   remove_.onClick = [this] { services_.chain.removeBlock(block_.blockId); };
@@ -209,6 +213,8 @@ void BlockCard::buildBody() {
   };
   selectWrap_.addAndMakeVisible(select_);
   body_.addAndMakeVisible(selectWrap_);
+  openPlugin_.onClick = [this] { services_.hostedPlugins.openEditor(block_.blockId); };
+  body_.addChildComponent(openPlugin_);
 
   body_.addChildComponent(infoBusy_);
 }
@@ -286,6 +292,9 @@ void BlockCard::syncFromBlock() {
     eqEditor_->setSampleRate(services_.chain.state().sampleRate);
   }
 
+  selectWrap_.setVisible(body() == Body::tone && !isPlugin());
+  openPlugin_.setVisible(body() == Body::tone && isPlugin());
+
   syncHeader();
   syncMeta();
   syncModelSelect();
@@ -343,6 +352,8 @@ void BlockCard::syncHeader() {
   eqView_->select(eqViewMode_ == BlockEqView::View::sliders ? 0 : 1);
   for (auto* c : std::initializer_list<juce::Component*>{&eqPower_, &preGroup_, eqView_.get()}) c->setVisible(showEq_);
 
+  swap_.setIcon(isPlugin() ? Icon::ExternalLink : Icon::ArrowLeftRight);
+  swap_.setHelpText(help::text(isPlugin() ? help::Key::openPluginEditor : help::Key::swapTone));
   info_.setVisible(!isLocal());
   info_.setOpen(showInfo_);
   share_.setVisible(!isLocal());
@@ -461,8 +472,10 @@ void BlockCard::setShowInfo(bool show) {
 void BlockCard::setBodyView() {
   const auto view = body();
   if (eqEditor_) eqEditor_->setVisible(view == Body::eq);
-  for (auto* c : std::initializer_list<juce::Component*>{&inMeter_, &outMeter_, &in_, &out_, &mix_, &selectWrap_})
+  for (auto* c : std::initializer_list<juce::Component*>{&inMeter_, &outMeter_, &in_, &out_, &mix_})
     c->setVisible(view == Body::tone);
+  selectWrap_.setVisible(view == Body::tone && !isPlugin());
+  openPlugin_.setVisible(view == Body::tone && isPlugin());
   normalizeWrap_.setVisible(view == Body::tone && isNam() &&
                             services_.prefs.getBool(UiPrefs::kShowBlockNormalizeControl, false));
   imageFrame_.setVisible(view != Body::eq);
@@ -576,6 +589,7 @@ void BlockCard::layoutToneBody(juce::Rectangle<int> body) {
   const int centreW = mixX - kBodyGap - centreX;
   selectWrap_.setBounds(centreX, bottom - kSelectHeight, centreW, kSelectHeight);
   select_.setBounds(selectWrap_.getLocalBounds());
+  openPlugin_.setTopLeftPosition(centreX, bottom - kSelectHeight + (kSelectHeight - openPlugin_.getHeight()) / 2);
 
   const int metaX = centreX + kImageSize + kBodyGap;
   const int metaW = centreW - kImageSize - kBodyGap;

@@ -10,15 +10,18 @@
 #include "BlockEq.h"
 #include "BlockSpectrum.h"
 #include "ChainOversampler.h"
+#include "HostedPlugin.h"
 #include "NamEngine.h"
 
-// Chain block types
-enum class ChainBlockType { NAM, IR, INSERT };
+// Chain block types. PLUGIN blocks host a third-party VST3 / AU plugin
+// (see HostedPlugin.h) instead of a TONE3000 tone.
+enum class ChainBlockType { NAM, IR, INSERT, PLUGIN };
 
 inline juce::String chainBlockTypeToString(ChainBlockType type) {
   switch (type) {
     case ChainBlockType::NAM: return "nam";
     case ChainBlockType::INSERT: return "insert";
+    case ChainBlockType::PLUGIN: return "plugin";
     case ChainBlockType::IR: break;
   }
   return "ir";
@@ -27,6 +30,7 @@ inline juce::String chainBlockTypeToString(ChainBlockType type) {
 inline ChainBlockType chainBlockTypeFromString(const juce::String& s) {
   if (s == "nam") return ChainBlockType::NAM;
   if (s == "insert") return ChainBlockType::INSERT;
+  if (s == "plugin") return ChainBlockType::PLUGIN;
   return ChainBlockType::IR;
 }
 
@@ -229,6 +233,23 @@ struct ChainBlock {
   bool irIsLong{false};
   juce::LinearSmoothedValue<float> irNormalizationSmoother;
   float irNormalizationGainLinear{1.0f};
+
+  // Hosted-plugin processing (PLUGIN blocks). The block's tone JSON carries
+  // the plugin's description under "plugin" (what to instantiate); the
+  // instance itself is created asynchronously on the message thread and
+  // attached once prepared (TONE3000Processor::queueHostedPluginLoad).
+  // `hostedPluginState` is the plugin's last known state blob: what a fresh
+  // instance is restored with (project/preset load, undo of a removal,
+  // duplicate, paste). While an instance is live, serialization reads the
+  // state straight from it instead.
+  std::unique_ptr<HostedPlugin> hosted;
+  juce::MemoryBlock hostedPluginState;
+  // Like IR convolution, the plugin always runs at the base rate: when the
+  // chain is oversampled this island decimates around it (bypass at x1).
+  ChainOversampler hostedBaseRateIsland;
+  // Bumped per queued instantiation, so a slow load that finishes after a
+  // newer one was queued (retry, restore) is discarded instead of attached.
+  juce::uint32 hostedLoadToken{0};
 
   // Per-block loudness normalization toggle, NAM only (off = the capture's
   // true level, which is real information; IR normalization is always on

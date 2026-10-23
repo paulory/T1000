@@ -12,6 +12,7 @@ const std::map<juce::String, juce::String> kGear = {
     {"amp", "Amp Head"},     {"amp-cab", "Amp + Cab"}, {"full-rig", "Amp + Cab"},
     {"pedal", "Pedal"},      {"outboard", "Outboard"}, {"cab", "Cabinet"},
     {"space", "Space"},      {"experimental", "Experimental"}, {"ir", "IR"},
+    {"plugin", "Plugin"},
 };
 
 const std::map<juce::String, juce::String> kFormat = {

@@ -43,6 +43,13 @@ void TONE3000Processor::pushChainHistory(const juce::String& coalesceKey) {
 }
 
 void TONE3000Processor::queueActiveModelLoad(ChainBlock& block) {
+  // Hosted plugins have no model to fetch: instantiate the plugin instead
+  // (restores, undo, duplicate, paste and retry all land here).
+  if (block.type == ChainBlockType::PLUGIN) {
+    queueHostedPluginLoad(block);
+    return;
+  }
+
   // Every bail below leaves the block unloadable, so flag it so the UI shows
   // the retry affordance instead of a loader that can never resolve, and log
   // at release level (these paths are the needle for "stuck loading after

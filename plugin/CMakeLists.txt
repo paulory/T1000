@@ -18,8 +18,14 @@ elseif(NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET OR CMAKE_OSX_DEPLOYMENT_TARGET ST
 endif()
 
 # Required by JUCE (Change these to project specs)
-set(PLUGIN_NAME "TONE3000")            # Name of the plugin (used in the UI)
-set(PLUGIN_CODE T3K0)                # Unique 4-letter code for the plugin
+# T1000 is a fork of the TONE3000 plugin (MIT) with hosted VST3/AU inserts.
+# Its own plugin identity (name, codes, bundle id, LV2/CLAP ids) so it
+# installs and loads side by side with the official TONE3000 plugin instead
+# of replacing it. The CMake target stays TONE3000 so the upstream scripts
+# and artefact paths (build/plugin/TONE3000_artefacts/...) keep working.
+set(PLUGIN_NAME "T1000")               # Name of the plugin (used in hosts)
+set(PLUGIN_CODE T1K0)                # Unique 4-letter code for the plugin
+set(T1000_BUNDLE_ID "com.paulory.T1000")
 
 # Version comes from the repo-root VERSION file (single source of truth).
 # Read here too so this directory still configures standalone.
@@ -219,8 +225,15 @@ else()
     set(_t3k_plist_to_merge PLIST_TO_MERGE "<plist version=\"1.0\"><dict><key>LSMinimumSystemVersion</key><string>${CMAKE_OSX_DEPLOYMENT_TARGET}</string></dict></plist>")
 endif()
 
+# iOS passes its own BUNDLE_ID through _t3k_ios_args.
+set(_t1000_bundle_args "")
+if (NOT T3K_IOS)
+    set(_t1000_bundle_args BUNDLE_ID "${T1000_BUNDLE_ID}")
+endif()
+
 juce_add_plugin(${PROJECT_NAME}
-    COMPANY_NAME TONE3000
+    COMPANY_NAME Tofu
+    ${_t1000_bundle_args}
     PLUGIN_NAME ${PLUGIN_NAME}
     IS_SYNTH FALSE
     # Pro Tools insert folders. Unset is None ("Other"). Harmonic is where
@@ -231,20 +244,20 @@ juce_add_plugin(${PROJECT_NAME}
     # hosts route their MIDI to us, standalone merges enabled MIDI inputs.
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE
-    PLUGIN_MANUFACTURER_CODE TFTF
+    PLUGIN_MANUFACTURER_CODE Tofu
     PLUGIN_CODE ${PLUGIN_CODE}
     FORMATS ${_plugin_formats}
     # The LV2 URI is the plugin's permanent identity in LV2 hosts (it keys
     # sessions and presets). Never change it once released.
-    LV2URI "https://www.tone3000.com/plugin"
-    PRODUCT_NAME ${PROJECT_NAME}
+    LV2URI "https://github.com/paulory/T1000"
+    PRODUCT_NAME ${PLUGIN_NAME}
     VST3_AUTO_MANIFEST ${VST3_MANIFEST}
     MICROPHONE_PERMISSION_ENABLED TRUE
-    MICROPHONE_PERMISSION_TEXT "TONE3000 needs microphone access for audio input processing."
+    MICROPHONE_PERMISSION_TEXT "T1000 needs microphone access for audio input processing."
     # Without this Info.plist key, macOS TCC kills the app the moment the
     # Bluetooth MIDI pairing dialog touches CoreBluetooth.
     BLUETOOTH_PERMISSION_ENABLED TRUE
-    BLUETOOTH_PERMISSION_TEXT "TONE3000 uses Bluetooth to find and pair Bluetooth MIDI controllers."
+    BLUETOOTH_PERMISSION_TEXT "T1000 uses Bluetooth to find and pair Bluetooth MIDI controllers."
     # Publish the launch floor in Info.plist too. The Mach-O slices already
     # carry their minimums (10.15 Intel, 11.0 arm64), but Launch Services and
     # Finder's Get Info read LSMinimumSystemVersion, and without it the app
@@ -345,6 +358,9 @@ target_sources(${PROJECT_NAME}
         src/ProcessorPresets.cpp
         src/ProcessorState.cpp
         src/ProcessorModelLoader.cpp
+        src/ProcessorHostedPlugins.cpp
+        include/HostedPlugin.h
+        src/HostedPlugin.cpp
         include/ChainDomain.h
         include/NamEngine.h
         src/NamEngine.cpp
@@ -498,6 +514,18 @@ target_compile_definitions(${PROJECT_NAME}
         JUCE_VST3_CAN_REPLACE_VST2=0
 )
 
+# Third-party plugin hosting: VST3 / AU inserts in the chain (PLUGIN blocks,
+# see include/HostedPlugin.h). Desktop GUI builds only: iOS has no desktop
+# plugins to load, and headless builds have no editor to pick them from.
+# Without these the format manager stays empty and hosting is simply off.
+if (NOT HEADLESS AND NOT T3K_IOS)
+    target_compile_definitions(${PROJECT_NAME}
+        PUBLIC
+            JUCE_PLUGINHOST_VST3=1
+            $<$<PLATFORM_ID:Darwin>:JUCE_PLUGINHOST_AU=1>
+    )
+endif()
+
 # Native networking (juce::URL / WebInputStream), used for model downloads
 # (ProcessorModelLoader). macOS/Windows use the OS HTTP stacks and ignore
 # JUCE_USE_CURL entirely. On Linux, curl is the ONLY backend with TLS: with
@@ -593,7 +621,7 @@ if (NOT HEADLESS AND BUILD_CLAP)
         EXCLUDE_FROM_ALL YES
     )
     clap_juce_extensions_plugin(TARGET ${PROJECT_NAME}
-        CLAP_ID "com.tone3000.plugin"
+        CLAP_ID "com.paulory.t1000"
         CLAP_FEATURES audio-effect distortion)
 endif()
 

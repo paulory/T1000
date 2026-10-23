@@ -76,6 +76,10 @@ TONE3000Processor::TONE3000Processor()
   cleanLocalModelStash();
   cleanLeakedIrTempFiles();
 
+  // Hosted plugins: the scanned-plugin list lives next to the settings file
+  // (shared by every instance; loaded once per process).
+  hostedCatalog->setStorageFile(getSettingsFile().getSiblingFile("hosted-plugins.xml"));
+
   // Oversampling settings apply through a message-thread bounce (see
   // applyOversamplingSettings); the relays can fire from any thread.
   parameters.addParameterListener("osEnabled", this);
@@ -412,6 +416,9 @@ void TONE3000Processor::handleAsyncUpdate() {
 // exactly once and the report doesn't depend on a callback having run.
 void TONE3000Processor::updateLatency() {
   int latency = chainBoundaryLatency;
+  // Hosted plugins run at the base rate; convert to host samples.
+  if (const int hosted = hostedLatencyBaseSamples.load(); hosted > 0)
+    latency += static_cast<int>(std::lround(hosted * hostSampleRate / kChainBaseSampleRate));
   if (paramRefs.pitchEnabled->load() >= 0.5f) {
     const auto window =
         PitchShift::windowFromIndex(static_cast<int>(std::lround(paramRefs.pitchWindow->load())));
@@ -508,6 +515,8 @@ int TONE3000Processor::namEngineVoiceCount(const std::string& blockId) const {
 }
 
 TONE3000Processor::~TONE3000Processor() {
+  // Pending hosted-plugin instantiations must not land on a dead processor.
+  aliveFlag->store(false);
   parameters.removeParameterListener("osEnabled", this);
   parameters.removeParameterListener("osFactor", this);
   for (const auto& paramId : presetParameterIds())
@@ -533,7 +542,11 @@ TONE3000Processor::~TONE3000Processor() {
 // JUCE SETTINGS
 // #############
 const juce::String TONE3000Processor::getName() const {
+#ifdef JucePlugin_Name
+  return JucePlugin_Name;
+#else
   return "TONE3000";
+#endif
 }
 
 bool TONE3000Processor::acceptsMidi() const {
@@ -559,7 +572,9 @@ double TONE3000Processor::getTailLengthSeconds() const {
   //    reference NAM plugin reports the same allowance for VST3 tail checks.
   const double irTailSeconds = irTailBaseSamples.load() / kChainBaseSampleRate;
   const double dcBlockerTailSeconds = 10.0 / 5.0;
-  return std::max(irTailSeconds, dcBlockerTailSeconds);
+  // Hosted plugins (delays, reverbs) report their own tails.
+  const double hostedTailSeconds = hostedTailMs.load() / 1000.0;
+  return std::max({irTailSeconds, dcBlockerTailSeconds, hostedTailSeconds});
 }
 
 // The host program API (getNumPrograms and friends) lives in
@@ -612,6 +627,16 @@ void TONE3000Processor::prepareChain(std::vector<std::unique_ptr<ChainBlock>>& b
       block->irBaseRateIsland.prepare(chainOversampleFactor.load(),
                                       juce::jmax(1, chainBaseBlockSize()));
 
+    // Hosted plugins run at the base rate behind their own island, like IRs.
+    // The rate never changes for them (always 48 kHz); only a new base block
+    // size needs the instance re-prepared.
+    if (block->type == ChainBlockType::PLUGIN) {
+      const int baseBlock = juce::jmax(1, chainBaseBlockSize());
+      block->hostedBaseRateIsland.prepare(chainOversampleFactor.load(), baseBlock);
+      if (block->hosted != nullptr && block->hosted->preparedBlockSize() != baseBlock)
+        block->hosted->prepare(baseBlock);
+    }
+
     // Initialize per-block smoothers (input gain, output gain, mix, NAM
     // normalization). The RT path only ever calls setTargetValue on these;
     // reset() belongs here and in the model-apply path, never per block.
@@ -643,11 +668,23 @@ void TONE3000Processor::prepareBlockForChainRate(ChainBlock& block) {
 // stereo toggles can never truncate a host's tail rendering mid-session.
 void TONE3000Processor::refreshIrTailLength() {
   int maxSamples = 0;
+  int maxHostedLatency = 0;
+  double maxHostedTail = 0.0;
   for (const auto& l : lanes)
-    for (const auto& b : l)
+    for (const auto& b : l) {
       if (b->type == ChainBlockType::IR && b->convolverMono != nullptr)
         maxSamples = std::max(maxSamples, b->irLengthBaseSamples);
+      if (b->type == ChainBlockType::PLUGIN && b->hosted != nullptr) {
+        maxHostedLatency = std::max(maxHostedLatency, b->hosted->latencySamples());
+        maxHostedTail = std::max(maxHostedTail, b->hosted->tailSeconds());
+      }
+    }
   irTailBaseSamples.store(maxSamples);
+  hostedTailMs.store(static_cast<int>(std::lround(maxHostedTail * 1000.0)));
+  // A hosted plugin's latency is reported to the host (the DAW compensates
+  // it); the report itself is a message-thread job (updateLatency).
+  if (hostedLatencyBaseSamples.exchange(maxHostedLatency) != maxHostedLatency)
+    triggerAsyncUpdate();
 }
 
 // Constant-power pan gains for a chain at position `pan` (0 = hard left,
@@ -1414,6 +1451,28 @@ void TONE3000Processor::processChainOnBuffer(std::vector<std::unique_ptr<ChainBl
         }
       } catch (const std::exception& e) {
         DBG("Error in IR processing for block " << block->id << ": " << e.what());
+      }
+    } else if (block->type == ChainBlockType::PLUGIN && block->hosted != nullptr) {
+      // Hosted VST3 / AU plugin, at the base rate inside the block's island
+      // (direct pass at x1; see ChainBlock::hostedBaseRateIsland). The
+      // block's own stages (input gain, EQ, mix, Out Gain, fades) wrap it
+      // exactly as they wrap a model.
+      try {
+        HostedPlugin* hosted = block->hosted.get();
+        block->hostedBaseRateIsland.processBaseRateIsland(
+            buffer.getArrayOfWritePointers(), numChannels, numSamples,
+            [hosted, numChannels](float* const* baseChannels, int baseFrames) {
+              hosted->process(baseChannels, numChannels, baseFrames);
+            });
+      } catch (...) {
+        // Same RT-safe failure path as NAM: drop the block to dry and flag it.
+        block->loaded = false;
+        block->rtProcessingFailed.store(true);
+        bumpChainRevision();
+        buffer.copyFrom(0, 0, dryScratch, 0, 0, numSamples);
+        if (numChannels > 1)
+          buffer.copyFrom(1, 0, dryScratch, 1, 0, numSamples);
+        continue;
       }
     }
 

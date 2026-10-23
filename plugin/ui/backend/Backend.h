@@ -148,6 +148,19 @@ public:
   enum class HostKey { space, enter };
   virtual bool forwardKeyToHost(HostKey key) = 0;
 
+  // Hosted VST3 / AU plugins in the chain. Defaults describe a backend that
+  // can't host (the testbed's mock): the UI hides every plugin entry point
+  // when pluginFormats() is null.
+  virtual juce::AudioPluginFormatManager* pluginFormats() { return nullptr; }
+  virtual juce::KnownPluginList* knownPlugins() { return nullptr; }
+  // Scanner crash marker (see juce::PluginListComponent).
+  virtual juce::File pluginScanDeadMansPedal() { return {}; }
+  // Scan one plugin file/bundle into the known list; the types it holds.
+  virtual juce::Array<juce::PluginDescription> scanPluginFile(const juce::File&) { return {}; }
+  // { blockId } or a user-facing { error }.
+  virtual juce::var loadHostedPlugin(const juce::PluginDescription&, const std::string&) { return {}; }
+  virtual bool openHostedPluginEditor(const std::string&) { return false; }
+
 protected:
   juce::ListenerList<Listener> listeners;
 };

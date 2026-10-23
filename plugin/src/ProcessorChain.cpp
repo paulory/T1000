@@ -148,6 +148,26 @@ juce::var TONE3000Processor::makeToneSummary(const juce::var& toneVar) {
   juce::DynamicObject::Ptr out = new juce::DynamicObject();
   out->setProperty("id", tone->getProperty("id"));
   out->setProperty("title", tone->getProperty("title"));
+
+  // Hosted plugin block (see loadHostedPlugin): name, vendor as the creator
+  // line, the plugin format as the badge. No catalog chrome, no models.
+  if (auto* plugin = tone->getProperty("plugin").getDynamicObject()) {
+    out->setProperty("plugin", true);
+    out->setProperty("local", true);
+    out->setProperty("format", plugin->getProperty("format"));
+    out->setProperty("gear", "plugin");
+    out->setProperty("images", juce::Array<juce::var>());
+    out->setProperty("models", juce::Array<juce::var>());
+    const juce::String vendor = plugin->getProperty("manufacturer").toString();
+    if (vendor.isNotEmpty()) {
+      juce::DynamicObject::Ptr u = new juce::DynamicObject();
+      u->setProperty("username", vendor);
+      u->setProperty("avatar_url", "");
+      out->setProperty("user", juce::var(u.get()));
+    }
+    return out.get();
+  }
+
   // Older persisted tone JSON used `platform` instead of `format`.
   juce::var format = tone->getProperty("format");
   if (format.toString().isEmpty())
@@ -295,7 +315,17 @@ std::string TONE3000Processor::loadTone(const juce::String& toneJsonString,
   DBG("Created tone block: " << parsed.toneId << " (block: " << blockId << ")");
   DBG("Queueing first model for background loading: " << parsed.modelName);
 
-  // Resolve the slot the tone lands in: the insert the user clicked (looked
+  landBlockInInsertSlot(std::move(block), targetInsertId);
+
+  bumpChainRevision();
+  queueToneLoad(blockId, parsed.firstModelId, parsed.modelUrl, parsed.modelName, parsed.type);
+
+  return blockId;
+}
+
+void TONE3000Processor::landBlockInInsertSlot(std::unique_ptr<ChainBlock> block,
+                                              const std::string& targetInsertId) {
+  // Resolve the slot the block lands in: the insert the user clicked (looked
   // up across both lanes; ids are globally unique), or the active lane's
   // first insert when the id is stale/absent (chain edited mid-flow, or an
   // older UI that doesn't send one).
@@ -327,11 +357,6 @@ std::string TONE3000Processor::loadTone(const juce::String& toneJsonString,
   else
     targetLane->push_back(std::move(block));
   alignBranchLaneLengths();
-
-  bumpChainRevision();
-  queueToneLoad(blockId, parsed.firstModelId, parsed.modelUrl, parsed.modelName, parsed.type);
-
-  return blockId;
 }
 
 std::string TONE3000Processor::landToneBlock(std::unique_ptr<ChainBlock> block,
@@ -461,6 +486,11 @@ bool TONE3000Processor::swapTone(const std::string& blockId, const juce::String&
     DBG("swapTone: block not found or is insert block: " << blockId);
     return false;
   }
+  // A hosted plugin is not a tone: replacing it is remove + add.
+  if (block->type == ChainBlockType::PLUGIN) {
+    DBG("swapTone: plugin blocks can't take a tone in place: " << blockId);
+    return false;
+  }
 
   const ParsedTone parsed = parseToneForLoading(toneJsonString);
   if (!parsed.valid)
@@ -540,8 +570,8 @@ bool TONE3000Processor::switchModel(const std::string& blockId, int modelId,
     return false;
   }
 
-  if (!block->toneVar.isObject()) {
-    DBG("Block has no parsed tone metadata");
+  if (!block->toneVar.isObject() || block->type == ChainBlockType::PLUGIN) {
+    DBG("Block has no parsed tone metadata (or hosts a plugin)");
     return false;
   }
 

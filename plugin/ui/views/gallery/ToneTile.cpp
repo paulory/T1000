@@ -1,6 +1,7 @@
 #include "ToneTile.h"
 
 #include "GalleryGeometry.h"
+#include "core/Fonts.h"
 #include "core/Help.h"
 #include "core/Icons.h"
 #include "core/Paint.h"
@@ -39,7 +40,13 @@ ToneTile::ToneTile(Services& services, const ChainItem& block, int size)
   addAndMakeVisible(chrome_);
   for (auto* b : {&power_, &swap_, &remove_}) chrome_.addAndMakeVisible(*b);
   power_.onClick = [this] { togglePower(); };
-  swap_.onClick = [this] { if (onSwap) onSwap(blockId()); };
+  // Plugin blocks repurpose the swap slot: open the plugin's own window.
+  swap_.onClick = [this] {
+    if (block_.tone.plugin)
+      this->services().hostedPlugins.openEditor(blockId());
+    else if (onSwap)
+      onSwap(blockId());
+  };
   remove_.onClick = [this] { this->services().chain.removeBlock(blockId()); };
 
   addAndMakeVisible(ledSlot_);
@@ -63,6 +70,8 @@ void ToneTile::setBlock(const ChainItem& block) {
   enabled_ = block.params.enabled;
   setHelpText(help::toneTile(block.tone.title));
   setTitle(block.tone.title);
+  swap_.setIcon(block.tone.plugin ? Icon::ExternalLink : Icon::ArrowLeftRight);
+  swap_.setHelpText(help::text(block.tone.plugin ? help::Key::openPluginEditor : help::Key::swapTone));
   image_.setTone(block.tone.image, block.tone.gear, block.tone.local, kGlyphSize);
   syncState();
 }
@@ -99,6 +108,11 @@ std::vector<ContextMenu::Item> ToneTile::menuItems() {
       {"Copy", Icon::Copy, help::Key::copyBlock,
        [this] { this->services().chain.copyBlock(blockId()); }},
   };
+  if (block_.tone.plugin) {
+    items.push_back({"Open Plugin", Icon::ExternalLink, help::Key::openPluginEditor,
+                     [this] { this->services().hostedPlugins.openEditor(blockId()); }});
+    return items;
+  }
   for (auto& item : localLoadItems()) items.push_back(std::move(item));
   return items;
 }
@@ -145,7 +159,18 @@ void ToneTile::paint(juce::Graphics& g) {
   }
 }
 
+bool ToneTile::isInterestedInFileDrag(const juce::StringArray& files) {
+  return !block_.tone.plugin && GalleryTile::isInterestedInFileDrag(files);
+}
+
 void ToneTile::paintOverChildren(juce::Graphics& g) {
+  // Every plugin shares the rack glyph, so the tile names it.
+  if (block_.tone.plugin && !dropArmed()) {
+    auto label = getLocalBounds().reduced(8).removeFromBottom(36).withTrimmedRight(BlockLed::kSize + 4);
+    g.setColour(theme::kWhite.withAlpha(enabled_ ? 0.9f : 0.45f));
+    g.setFont(Fonts::sans(13.0f, true));
+    g.drawFittedText(block_.tone.title, label, juce::Justification::bottomLeft, 2, 0.85f);
+  }
   if (dropArmed())
     paint::dashedBorder(g, getLocalBounds().toFloat(), gallery::kTileCorner,
                         gallery::kFileDropBorder, gallery::kAddTileBorderWidth);

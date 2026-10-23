@@ -11,6 +11,7 @@
 #include "ChainStore.h"
 #include "ConnectionGate.h"
 #include "HintBus.h"
+#include "HostedPlugins.h"
 #include "ImageLoader.h"
 #include "LocalFiles.h"
 #include "MeterStore.h"
@@ -60,6 +61,7 @@ public:
         autoBalance(b, toast, AutoMeasure::Kind::balance),
         autoAlign(b, toast, AutoMeasure::Kind::align),
         localFiles(chain, toast),
+        hostedPlugins(b, chain, toast),
         modelLoads(chain, t),
         connection(t),
         loadFlow(chain, connection, t),
@@ -83,6 +85,7 @@ public:
   ImageLoader images;
   BrowserState browser;
   LocalFiles localFiles;
+  HostedPlugins hostedPlugins;
   ModelLoads modelLoads;
   ConnectionGate connection;
   ToneLoadFlow loadFlow;

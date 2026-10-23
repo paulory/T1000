@@ -26,6 +26,7 @@ target_sources(DspTests PRIVATE
     src/eq_post_routing_tests.cpp
     src/factory_preset_tests.cpp
     src/gate_tests.cpp
+    src/hosted_plugin_tests.cpp
     src/host_program_tests.cpp
     src/ir_block_size_tests.cpp
     src/ir_classification_tests.cpp
@@ -59,6 +60,8 @@ target_sources(DspTests PRIVATE
     ../plugin/src/ProcessorChain.cpp
     ../plugin/src/ProcessorHistory.cpp
     ../plugin/src/ProcessorModelLoader.cpp
+    ../plugin/src/ProcessorHostedPlugins.cpp
+    ../plugin/src/HostedPlugin.cpp
     ../plugin/src/ProcessorPresets.cpp
     ../plugin/src/ProcessorState.cpp
     ../plugin/src/Spread.cpp
@@ -104,6 +107,9 @@ target_compile_definitions(DspTests PRIVATE
     # Exposes is_a2_shape, which ProcessorModelLoader.cpp uses to gate
     # drop-loaded local NAM files (same as plugin/CMakeLists.txt).
     NAM_ENABLE_A2_FAST
+    # Hosted-plugin tests load a real VST3 when T3K_TEST_VST3 points at one
+    # (skipped otherwise); same hosting flag as the plugin itself.
+    JUCE_PLUGINHOST_VST3=1
 )
 
 target_link_libraries(DspTests

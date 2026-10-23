@@ -66,6 +66,28 @@ bool ProcessorBackend::refreshToneMetadata(const juce::String& toneJson) {
 bool ProcessorBackend::switchModel(const std::string& blockId, int modelId, const juce::var& model) {
   return processor_.switchModel(blockId, modelId, model);
 }
+// Hosted plugins
+juce::AudioPluginFormatManager* ProcessorBackend::pluginFormats() {
+  auto& catalog = processor_.getHostedPluginCatalog();
+  return catalog.hostingAvailable() ? &catalog.formats() : nullptr;
+}
+juce::KnownPluginList* ProcessorBackend::knownPlugins() {
+  return &processor_.getHostedPluginCatalog().knownPlugins();
+}
+juce::File ProcessorBackend::pluginScanDeadMansPedal() {
+  return processor_.getHostedPluginCatalog().deadMansPedalFile();
+}
+juce::Array<juce::PluginDescription> ProcessorBackend::scanPluginFile(const juce::File& file) {
+  return processor_.getHostedPluginCatalog().scanFile(file);
+}
+juce::var ProcessorBackend::loadHostedPlugin(const juce::PluginDescription& description,
+                                             const std::string& targetInsertId) {
+  return processor_.loadHostedPlugin(description, targetInsertId);
+}
+bool ProcessorBackend::openHostedPluginEditor(const std::string& blockId) {
+  return processor_.openHostedPluginEditor(blockId);
+}
+
 bool ProcessorBackend::retryModelLoad(const std::string& blockId) {
   return processor_.retryModelLoad(blockId);
 }

@@ -1,0 +1,96 @@
+# T1000 - macOS build (universal: Apple Silicon + Intel)
+#
+# Builds the Standalone app, VST3 and AU on every push to main (and on
+# demand), ad-hoc signs them, and uploads:
+#   - T1000-macos.pkg : installer (app -> /Applications, plugins -> /Library/Audio/Plug-Ins)
+#   - T1000-macos.zip : the same three bundles, for a manual install
+# Unsigned by a Developer ID, so the first launch needs right-click > Open
+# (or `xattr -dr com.apple.quarantine` on the bundles).
+#
+# Optional repository secret T3K_PUBLISHABLE_KEY (a TONE3000 publishable key,
+# tone3000.com > Settings > API Keys) enables TONE3000 sign-in and the tone
+# browser. Without it local .nam / IR files and hosted plugins still work.
+
+name: T1000 macOS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-14
+    env:
+      T3K_PUBLISHABLE_KEY: ${{ secrets.T3K_PUBLISHABLE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache CPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            libs/juce
+            libs/googletest
+            libs/clap-juce-extensions
+          key: cpm-t1000-macos-${{ hashFiles('CMakeLists.txt', 'plugin/CMakeLists.txt') }}
+
+      - name: Configure
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DBUILD_AAX=OFF -DBUILD_LV2=OFF -DBUILD_CLAP=OFF
+
+      - name: Build
+        run: |
+          cmake --build build --parallel 4 \
+            --target TONE3000_Standalone TONE3000_VST3 TONE3000_AU DspTests
+
+      - name: DSP tests
+        run: ctest --test-dir build/test --output-on-failure
+
+      - name: Collect and sign
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/out"
+          ART=build/plugin/TONE3000_artefacts/Release
+          mkdir -p "$OUT/app" "$OUT/vst3" "$OUT/au"
+          ditto "$ART/Standalone/T1000.app" "$OUT/app/T1000.app"
+          ditto "$ART/VST3/T1000.vst3" "$OUT/vst3/T1000.vst3"
+          ditto "$ART/AU/T1000.component" "$OUT/au/T1000.component"
+          for b in "$OUT/app/T1000.app" "$OUT/vst3/T1000.vst3" "$OUT/au/T1000.component"; do
+            codesign --force --deep --sign - "$b"
+            lipo -info "$(find "$b/Contents/MacOS" -type f | head -1)"
+          done
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+
+      - name: Package
+        run: |
+          set -euo pipefail
+          VERSION=$(tr -d '[:space:]' < VERSION)
+          cd "$OUT"
+          pkgbuild --root app  --install-location /Applications \
+            --identifier com.paulory.T1000.app  --version "$VERSION" app.pkg
+          pkgbuild --root vst3 --install-location /Library/Audio/Plug-Ins/VST3 \
+            --identifier com.paulory.T1000.vst3 --version "$VERSION" vst3.pkg
+          pkgbuild --root au   --install-location /Library/Audio/Plug-Ins/Components \
+            --identifier com.paulory.T1000.au   --version "$VERSION" au.pkg
+          productbuild --package app.pkg --package vst3.pkg --package au.pkg T1000-macos.pkg
+          mkdir -p zip && cp -R app/T1000.app vst3/T1000.vst3 au/T1000.component zip/
+          (cd zip && ditto -c -k --keepParent . ../T1000-macos.zip)
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: T1000-macos
+          path: |
+            ${{ env.OUT }}/T1000-macos.pkg
+            ${{ env.OUT }}/T1000-macos.zip
+          if-no-files-found: error

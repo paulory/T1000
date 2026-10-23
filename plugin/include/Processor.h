@@ -216,6 +216,25 @@ public:
   // (empty clipboard, or the right lane while mono).
   std::string pasteChainBlock(const juce::String& side, int index);
 
+  // Third-party plugin hosting (VST3, plus AU on macOS). A hosted plugin is
+  // a chain block of type PLUGIN: it takes a slot like a tone, keeps the
+  // block's gains / mix / EQ / power, moves, duplicates, copies and pastes
+  // like one, and persists its own state with presets, undo and DAW
+  // sessions. Instances are created asynchronously on the message thread
+  // (the tile shows its loading state meanwhile).
+  //
+  // Load `description` into the insert slot `targetInsertId` (the active
+  // lane's first insert when absent or stale). Returns { blockId } or a
+  // user-facing { error }. Message thread.
+  juce::var loadHostedPlugin(const juce::PluginDescription& description,
+                             const std::string& targetInsertId = {});
+  // Open (or bring to front) the hosted plugin's own editor window. False
+  // when the block is not a loaded plugin block. Message thread.
+  bool openHostedPluginEditor(const std::string& blockId);
+  // Process-wide format manager + scanned plugin list (shared by every
+  // instance; the list persists next to the settings file).
+  HostedPluginCatalog& getHostedPluginCatalog() { return *hostedCatalog; }
+
   // TONE3000 OAuth access token. Updated by the UI after the Select flow and
   // again on every refresh. `fetchModelFromUrl` attaches it as a Bearer header
   // because the new TONE3000 model_url endpoints reject anonymous requests.
@@ -747,8 +766,33 @@ private:
   // ChainBlock::irBaseRateIsland). Called wherever the set of live IR engines
   // can change: model apply, block removal, snapshot restore. Caller must
   // hold chainMutex; getTailLengthSeconds reads the atomic lock-free.
+  // Also refreshes the hosted plugins' latency / tail (hostedLatencyBaseSamples,
+  // hostedTailMs) and schedules a latency report when it moved.
   void refreshIrTailLength();
   std::atomic<int> irTailBaseSamples{0};
+  // Largest latency (base-rate samples) and tail (ms) across hosted plugins.
+  std::atomic<int> hostedLatencyBaseSamples{0};
+  std::atomic<int> hostedTailMs{0};
+
+  // Hosted plugins (see loadHostedPlugin). queueHostedPluginLoad arms the
+  // block's loading state and posts the instantiation to the message thread;
+  // finishHostedPluginLoad prepares the instance off the lock and splices it
+  // in (or flips loadFailed). Both tolerate the block being gone or reloaded
+  // meanwhile (hostedLoadToken). queueActiveModelLoad routes PLUGIN blocks
+  // here, so every creation path (restore, undo, duplicate, paste, retry)
+  // shares it. queueHostedPluginLoad: caller holds chainMutex.
+  void queueHostedPluginLoad(ChainBlock& block);
+  void finishHostedPluginLoad(const std::string& blockId, juce::uint32 token,
+                              std::unique_ptr<juce::AudioPluginInstance> instance,
+                              const juce::String& error, const juce::MemoryBlock& state);
+  // loadTone's slot resolution, shared with loadHostedPlugin: `block` takes
+  // the insert `targetInsertId` (any lane), or the active lane's first
+  // insert, then the lanes re-align. Caller holds chainMutex.
+  void landBlockInInsertSlot(std::unique_ptr<ChainBlock> block, const std::string& targetInsertId);
+  juce::SharedResourcePointer<HostedPluginCatalog> hostedCatalog;
+  // Cleared in the destructor: async instantiation callbacks check it before
+  // touching the processor.
+  std::shared_ptr<std::atomic<bool>> aliveFlag = std::make_shared<std::atomic<bool>>(true);
 
   // The chain the UI edits/adds to right now (Left in mono mode, or the active side in stereo).
   std::vector<std::unique_ptr<ChainBlock>>& activeChain();

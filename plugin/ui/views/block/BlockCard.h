@@ -94,6 +94,7 @@ private:
 
   bool isNam() const { return block_.tone.isNam(); }
   bool isLocal() const { return block_.tone.local; }
+  bool isPlugin() const { return block_.tone.plugin; }
   bool authenticated() const { return services_.session.authenticated(); }
   bool modelBusy() const { return block_.modelLoading || (!block_.loaded && !block_.loadFailed); }
   bool normalizeOverridden() const;
@@ -142,6 +143,8 @@ private:
   ToneMeta meta_;
   juce::Component selectWrap_;
   ModelSelect select_;
+  // Plugin blocks: the model picker's place holds the plugin window button.
+  ChromeTextButton openPlugin_{"OPEN PLUGIN", help::Key::openPluginEditor};
   BusyOverlay infoBusy_{BusyOverlay::Align::centre};
   std::unique_ptr<BlockEqView> eqEditor_;
 

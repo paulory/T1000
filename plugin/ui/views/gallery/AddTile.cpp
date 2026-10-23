@@ -39,6 +39,7 @@ std::vector<ContextMenu::Item> AddTile::menuItems() {
        [this] { if (onPaste) onPaste(blockId()); }, /*disabled=*/!canPaste_},
   };
   for (auto& item : localLoadItems()) items.push_back(std::move(item));
+  for (auto& item : pluginLoadItems()) items.push_back(std::move(item));
   return items;
 }
 

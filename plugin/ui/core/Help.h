@@ -32,7 +32,8 @@ enum class Key {
   // Sign-in screen
   signInBack, signInCopyLink, signInPhone, signInNewCode, signInRetry, signInDismiss,
   // Chain gallery
-  addTile, closeToneBrowser, copyBlock, pasteBlock, loadFileTile, loadFolderTile, blockPower,
+  addTile, closeToneBrowser, copyBlock, pasteBlock, loadFileTile, loadFolderTile, loadPluginTile,
+  managePlugins, openPluginEditor, blockPower,
   retryLoad, swapTone, removeBlock, panLeft, panRight, panLink, monoSum, panMonoSum, soloLeft,
   soloRight, invertLeft, invertRight, swapChains, branchGap, branchJunction,
   // Block card

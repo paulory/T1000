@@ -208,6 +208,17 @@ juce::ValueTree TONE3000Processor::serializeBlockSettings(const ChainBlock& bloc
     blockState.appendChild(block.eq.toValueTree(), nullptr);
   }
 
+  // A hosted plugin's own state (its knobs, its presets), base64 so it rides
+  // every serialization of this tree alike: binary DAW state, preset files,
+  // undo snapshots, the block clipboard. Read from the live instance when
+  // there is one; the last known blob while it is still loading (or failed).
+  if (block.type == ChainBlockType::PLUGIN) {
+    const juce::MemoryBlock state =
+        block.hosted != nullptr ? block.hosted->getState() : block.hostedPluginState;
+    if (state.getSize() > 0)
+      blockState.setProperty("pluginState", state.toBase64Encoding(), nullptr);
+  }
+
   return blockState;
 }
 
@@ -234,6 +245,17 @@ void TONE3000Processor::applyBlockSettings(ChainBlock& block, const juce::ValueT
     // prepareChain has seen.
     block.eq.restoreFromValueTree(blockState.getChildWithName("Eq"));
     prepareBlockForChainRate(block);
+  }
+
+  // What a fresh instance of this block's plugin restores. A block that
+  // keeps its live instance across the restore (an undo of a knob tweak, a
+  // reconciled preset) is left as it is: the plugin's own state is the
+  // plugin's, like any host's insert.
+  if (block.type == ChainBlockType::PLUGIN) {
+    block.hostedPluginState.reset();
+    const juce::String encoded = blockState.getProperty("pluginState").toString();
+    if (encoded.isNotEmpty())
+      block.hostedPluginState.fromBase64Encoding(encoded);
   }
 }
 

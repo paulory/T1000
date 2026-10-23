@@ -41,7 +41,7 @@ inline const char* svgFor(const juce::String& gearId) {
   const auto id = gearId.toLowerCase();
   if (id == "amp-cab" || id == "full-rig") return kFullRig;
   if (id == "pedal") return kPedal;
-  if (id == "outboard") return kOutboard;
+  if (id == "outboard" || id == "plugin") return kOutboard;
   if (id == "cab") return kSpeakerCab;
   if (id == "space") return kSpace;
   if (id == "experimental") return kExperimental;

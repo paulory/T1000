@@ -47,6 +47,14 @@ juce::String ChainStore::loadLocalToneUrls(const juce::Array<juce::URL>& sources
   return localLoadResult(run([&] { return backend_.loadLocalToneUrls(sources, targetId); }));
 }
 
+juce::String ChainStore::loadHostedPlugin(const juce::PluginDescription& description,
+                                          const std::string& targetInsertId) {
+  const auto res = run([&] { return backend_.loadHostedPlugin(description, targetInsertId); });
+  if (res.isObject() && res.getProperty("blockId", "").toString().isNotEmpty()) return {};
+  const auto error = res.isObject() ? res.getProperty("error", "").toString() : juce::String();
+  return error.isNotEmpty() ? error : "Couldn't load the plugin";
+}
+
 bool ChainStore::swapTone(const std::string& blockId, const juce::String& toneJson) {
   return run([&] { return backend_.swapTone(blockId, toneJson); });
 }

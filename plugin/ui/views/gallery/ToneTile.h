@@ -40,6 +40,8 @@ public:
   void paint(juce::Graphics& g) override;
   void paintOverChildren(juce::Graphics& g) override;
   void resized() override;
+  // Plugin blocks take no file drops (a plugin can't become a tone in place).
+  bool isInterestedInFileDrag(const juce::StringArray& files) override;
 
 protected:
   void open() override;

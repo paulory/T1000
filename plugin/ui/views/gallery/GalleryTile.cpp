@@ -52,6 +52,23 @@ std::vector<ContextMenu::Item> GalleryTile::localLoadItems() {
   };
 }
 
+std::vector<ContextMenu::Item> GalleryTile::pluginLoadItems() {
+  if (!services_.hostedPlugins.available()) return {};
+  // The picker is a second menu: open it once this action sheet has closed
+  // (the row's click is still on the stack here).
+  return {
+      {"Load Plugin", Icon::Plus, help::Key::loadPluginTile,
+       [this] {
+         juce::Component::SafePointer<GalleryTile> self(this);
+         juce::MessageManager::callAsync([self] {
+           if (self != nullptr) self->services_.hostedPlugins.pick(self->blockId_, *self);
+         });
+       }},
+      {"Plugins...", Icon::Settings, help::Key::managePlugins,
+       [this] { services_.hostedPlugins.openManager(); }},
+  };
+}
+
 // Menu
 void GalleryTile::openMenu(juce::Point<int> at) {
   suppressClickUntilMs_ = juce::Time::currentTimeMillis() + kSuppressClickMs;

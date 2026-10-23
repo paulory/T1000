@@ -41,6 +41,10 @@ public:
   // user-facing error).
   juce::String loadLocalTonePath(const juce::File& source, const std::string& targetId);
   juce::String loadLocalToneUrls(const juce::Array<juce::URL>& sources, const std::string& targetId);
+  // Add a hosted VST3 / AU plugin at an insert slot ("" = success, else a
+  // user-facing error).
+  juce::String loadHostedPlugin(const juce::PluginDescription& description,
+                                const std::string& targetInsertId);
   bool swapTone(const std::string& blockId, const juce::String& toneJson);
   bool refreshToneMetadata(const juce::String& toneJson);
   bool switchModel(const std::string& blockId, int modelId, const juce::var& model);

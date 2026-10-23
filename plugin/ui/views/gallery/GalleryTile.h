@@ -45,6 +45,9 @@ public:
 
   // Tone tile: swap in place; insert slot: add. Shared menu rows.
   std::vector<ContextMenu::Item> localLoadItems();
+  // Insert slot: Load Plugin (VST3 / AU) + the plugin manager; empty when
+  // the backend can't host.
+  std::vector<ContextMenu::Item> pluginLoadItems();
 
   void mouseDown(const juce::MouseEvent& e) override;
   void mouseDrag(const juce::MouseEvent& e) override;

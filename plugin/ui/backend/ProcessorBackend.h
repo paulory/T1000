@@ -52,6 +52,14 @@ public:
   void setMultiCore(bool enabled) override;
   void persistParamAsMachineDefault(const juce::String& id) override;
 
+  juce::AudioPluginFormatManager* pluginFormats() override;
+  juce::KnownPluginList* knownPlugins() override;
+  juce::File pluginScanDeadMansPedal() override;
+  juce::Array<juce::PluginDescription> scanPluginFile(const juce::File& file) override;
+  juce::var loadHostedPlugin(const juce::PluginDescription& description,
+                             const std::string& targetInsertId) override;
+  bool openHostedPluginEditor(const std::string& blockId) override;
+
   bool setBlockParam(const std::string& blockId, const juce::String& param, double value) override;
   bool setBlockSlimSize(const std::string& blockId, double slimSize) override;
   bool setBlockEqBand(const std::string& blockId, int bandIndex, const juce::var& band) override;

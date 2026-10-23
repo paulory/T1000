@@ -1,3 +1,36 @@
+# T1000
+
+A fork of the open-source [TONE3000 plugin](https://github.com/tone-3000/tone3000-plugin)
+(MIT, see `LICENSE`) that adds **third-party plugin inserts**: any VST3 effect
+(and AU on macOS) can sit in the signal chain next to NAM captures and IRs.
+
+- **Add one:** right-click an empty slot → **Load Plugin** → pick a scanned
+  plugin (grouped by vendor), or **Browse for Plugin File…** to load a
+  `.vst3` / `.component` directly. **Plugins…** opens the scanner/manager
+  (first time: Options → Scan).
+- **Edit it:** the tile's ↗ button, right-click → **Open Plugin**, or
+  **OPEN PLUGIN** in the block view opens the plugin's own window.
+- **It's a normal block:** power, In / Out / Mix, the 6-band EQ (pre or
+  post), drag to reorder, move between stereo chains, copy / paste,
+  duplicate, undo / redo. The plugin's own settings are saved with presets,
+  DAW sessions and the standalone's state.
+- **Audio:** hosted plugins always run at 48 kHz, even when the chain is
+  oversampled, and their latency is reported to the host. They get the
+  chain in stereo; in dual-chain stereo mode each lane is mono, so the
+  plugin gets that lane on both inputs and its outputs are summed back.
+- T1000 has its own plugin identity (`T1000.vst3`, `T1000.component`,
+  `T1000.app`), so it installs next to the official TONE3000 plugin. It
+  shares its presets folder and settings.
+- macOS builds come from `.github/workflows/t1000-macos.yml` (Actions →
+  T1000 macOS → artifact `T1000-macos`: a `.pkg` installer and a `.zip`).
+  They are ad-hoc signed: on first launch right-click → Open. TONE3000
+  sign-in needs a publishable key in the `T3K_PUBLISHABLE_KEY` repository
+  secret; local files and hosted plugins work without it.
+
+The upstream README follows.
+
+---
+
 # TONE3000 Plugin
 
 A JUCE-based audio plugin (VST3, AU, CLAP, LV2, Standalone) that loads
