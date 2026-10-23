@@ -247,15 +247,23 @@ void HostedPluginCatalog::setStorageFile(const juce::File& file) {
   if (file == storageFile)
     return;
   storageFile = file;
+  // The first build scanned on a worker thread, which crashed on plugins
+  // that must be created on the main thread; its crash marker would wrongly
+  // blacklist them. Drop it (the v2 marker replaces it).
+  const juce::File oldPedal = storageFile.getSiblingFile("hosted-plugins-scan.lock");
+  const bool hadOldPedal = oldPedal.existsAsFile();
+  oldPedal.deleteFile();
   if (auto xml = juce::parseXML(storageFile)) {
     const juce::ScopedValueSetter<bool> guard(loading, true);
     known.recreateFromXml(*xml);
   }
+  if (hadOldPedal)
+    known.clearBlacklistedFiles();  // saved via the change listener
 }
 
 juce::File HostedPluginCatalog::deadMansPedalFile() const {
   return storageFile == juce::File() ? juce::File()
-                                     : storageFile.getSiblingFile("hosted-plugins-scan.lock");
+                                     : storageFile.getSiblingFile("hosted-plugins-scan-v2.lock");
 }
 
 void HostedPluginCatalog::changeListenerCallback(juce::ChangeBroadcaster*) {

@@ -31,8 +31,13 @@ public:
       : juce::DocumentWindow("Plugins", juce::Colour(0xff141416), juce::DocumentWindow::closeButton),
         owner_(owner) {
     setUsingNativeTitleBar(true);
+    // Scan on the message thread (no async-only plugins, no scanner
+    // thread). Many plugins (Neural DSP's among them) are only safe to
+    // create and destroy on the main thread; a threaded scan crashed the
+    // app while probing them.
     auto* content = new juce::PluginListComponent(formats, list, deadMansPedal, nullptr,
-                                                  /*allowAsync=*/true);
+                                                  /*allowAsync=*/false);
+    content->setNumberOfThreadsForScanning(0);
     content->setSize(640, 480);
     setContentOwned(content, true);
     setResizable(true, false);
