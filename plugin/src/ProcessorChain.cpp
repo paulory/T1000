@@ -153,6 +153,7 @@ juce::var TONE3000Processor::makeToneSummary(const juce::var& toneVar) {
   // line, the plugin format as the badge. No catalog chrome, no models.
   if (auto* plugin = tone->getProperty("plugin").getDynamicObject()) {
     out->setProperty("plugin", true);
+    out->setProperty("plugin_path", plugin->getProperty("path"));
     out->setProperty("local", true);
     out->setProperty("format", plugin->getProperty("format"));
     out->setProperty("gear", "plugin");

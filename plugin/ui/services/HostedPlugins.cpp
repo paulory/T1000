@@ -1,5 +1,11 @@
 #include "HostedPlugins.h"
 
+// juce_graphics: an .app/.vst3 bundle's CFBundleIconFile as an image (macOS;
+// an empty image on other platforms, or when the bundle names no icon).
+namespace juce {
+extern Image JUCE_API getIconFromApplication(const String&, int);
+}
+
 namespace t3k::ui {
 
 namespace {
@@ -171,6 +177,43 @@ void HostedPlugins::openManager() {
   }
   manager_ = std::make_unique<ManagerWindow>(*this, *backend_.pluginFormats(), *backend_.knownPlugins(),
                                              backend_.pluginScanDeadMansPedal());
+}
+
+juce::Image HostedPlugins::iconFor(const juce::String& pluginPath, const juce::String& name,
+                                   const juce::String& vendor) {
+  const auto key = pluginPath + "|" + name;
+  if (auto it = icons_.find(key); it != icons_.end()) return it->second;
+
+  juce::Image icon;
+#if JUCE_MAC
+  constexpr int kSize = 512;
+  // 1. The plugin bundle's own icon (a .vst3 / .component path; AUs found by
+  //    identifier have no path here).
+  if (juce::File::isAbsolutePath(pluginPath) && juce::File(pluginPath).exists())
+    icon = juce::getIconFromApplication(pluginPath, kSize);
+
+  // 2. The vendor's standalone app with the plugin's name.
+  if (!icon.isValid() && name.isNotEmpty()) {
+    const auto appName = juce::File::createLegalFileName(name) + ".app";
+    juce::Array<juce::File> roots{juce::File("/Applications"),
+                                  juce::File::getSpecialLocation(juce::File::userHomeDirectory)
+                                      .getChildFile("Applications")};
+    juce::Array<juce::File> candidates;
+    for (const auto& root : roots) {
+      candidates.add(root.getChildFile(appName));
+      if (vendor.isNotEmpty()) candidates.add(root.getChildFile(vendor).getChildFile(appName));
+      for (const auto& dir : root.findChildFiles(juce::File::findDirectories, false))
+        if (!dir.hasFileExtension(".app")) candidates.add(dir.getChildFile(appName));
+    }
+    for (const auto& app : candidates)
+      if (app.isDirectory() && (icon = juce::getIconFromApplication(app.getFullPathName(), kSize)).isValid())
+        break;
+  }
+#else
+  juce::ignoreUnused(vendor);
+#endif
+  icons_[key] = icon;
+  return icon;
 }
 
 void HostedPlugins::openEditor(const std::string& blockId) {

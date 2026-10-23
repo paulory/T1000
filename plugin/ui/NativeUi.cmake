@@ -20,6 +20,8 @@ if (NOT TARGET NativeUiAssets)
             "${T3K_UI_DIR}/assets/Arimo-BoldItalic.ttf"
             "${T3K_UI_DIR}/assets/t3k.svg"
             "${T3K_UI_DIR}/assets/t3k-mark.svg"
+            "${T3K_UI_DIR}/assets/t1000-logo.png"
+            "${T3K_UI_DIR}/assets/t1000-mark.png"
     )
     # Plugin formats are shared libraries; the object code needs to be PIC.
     set_target_properties(NativeUiAssets PROPERTIES POSITION_INDEPENDENT_CODE ON)

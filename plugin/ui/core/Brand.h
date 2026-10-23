@@ -7,9 +7,9 @@
 namespace t3k::ui {
 
 struct Brand {
-  // The 210x32 wordmark (assets/t3k.svg).
+  // The T1000 wordmark (assets/t1000-logo.png, 640x96).
   static const juce::Drawable& logo();
-  // The 36x12 mark (assets/t3k-mark.svg).
+  // The T1000 mark (assets/t1000-mark.png, 144x48, drawn 36x12).
   static const juce::Drawable& mark();
   // The A2-architecture badge (FormatBadge.tsx A2Mark): a white→#434343
   // gradient rounded square with a cut-out "A2", 24-unit viewBox.

@@ -21,6 +21,7 @@ juce::var makePluginToneVar(const juce::PluginDescription& d) {
   plugin->setProperty("format", HostedPluginCatalog::formatLabel(d.pluginFormatName));
   plugin->setProperty("manufacturer", d.manufacturerName);
   plugin->setProperty("identifier", d.createIdentifierString());
+  plugin->setProperty("path", d.fileOrIdentifier);
 
   juce::DynamicObject::Ptr tone = new juce::DynamicObject();
   tone->setProperty("id", 0);

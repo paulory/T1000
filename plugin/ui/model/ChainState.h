@@ -108,6 +108,7 @@ struct ToneSummary {
   // A hosted VST3 / AU plugin block: title = plugin name, user = vendor,
   // format = "VST3" / "AU".
   bool plugin = false;
+  juce::String pluginPath;  // the plugin's file (or AU identifier), for its icon
 };
 
 struct ChainItem {

@@ -36,12 +36,14 @@ std::unique_ptr<juce::Drawable> parseString(const char* svg) {
 }  // namespace
 
 const juce::Drawable& Brand::logo() {
-  static const auto d = parse(UiBinaryData::t3k_svg, UiBinaryData::t3k_svgSize);
+  // T1000 wordmark (640x96 PNG, drawn at 160x24 in the header).
+  static const auto d = parse(UiBinaryData::t1000logo_png, UiBinaryData::t1000logo_pngSize);
   return *d;
 }
 
 const juce::Drawable& Brand::mark() {
-  static const auto d = parse(UiBinaryData::t3kmark_svg, UiBinaryData::t3kmark_svgSize);
+  // T1000 mark (144x48 PNG, drawn at 36x12).
+  static const auto d = parse(UiBinaryData::t1000mark_png, UiBinaryData::t1000mark_pngSize);
   return *d;
 }
 
@@ -58,8 +60,13 @@ const juce::Drawable& Brand::verifiedBadge() {
 void Brand::drawLogo(juce::Graphics& g, juce::Rectangle<float> box) {
   // The web laid the logo out by width only (<img style="width: 160rem">),
   // so the height follows the 210:32 viewBox and may be fractional.
-  const float h = box.getWidth() * 32.0f / 210.0f;
-  paint::svg(g, logo(), box.withSizeKeepingCentre(box.getWidth(), h));
+  // Fit the artwork's own aspect inside the box, left aligned (the header
+  // lays the logo out from its left edge).
+  const auto art = logo().getDrawableBounds();
+  const float scale = juce::jmin(box.getWidth() / art.getWidth(), box.getHeight() / art.getHeight());
+  const auto fitted = box.withSize(art.getWidth() * scale, art.getHeight() * scale)
+                          .withCentre({box.getX() + art.getWidth() * scale / 2, box.getCentreY()});
+  paint::svg(g, logo(), fitted);
 }
 
 void Brand::drawMark(juce::Graphics& g, juce::Rectangle<float> box) {

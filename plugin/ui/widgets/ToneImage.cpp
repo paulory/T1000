@@ -70,6 +70,13 @@ void ToneImage::setGlow(const Glow& glow) {
   repaint(box.removeFromRight(band));
 }
 
+void ToneImage::setArtwork(const juce::Image& artwork) {
+  if (artwork_ == artwork) return;
+  artwork_ = artwork;
+  base_ = {};
+  repaint();
+}
+
 void ToneImage::rebuildBase(float scale) {
   const int w = getWidth(), h = getHeight();
   if (w <= 0 || h <= 0) return;
@@ -86,6 +93,14 @@ void ToneImage::rebuildBase(float scale) {
   const auto box = getLocalBounds().toFloat();
   g.setColour(theme::kSurface);
   g.fillRect(box);
+  if (artwork_.isValid()) {
+    // App icons carry their own shape and margins: show them whole.
+    const float side = box.getWidth() * 0.62f;
+    g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
+    g.drawImage(artwork_, box.withSizeKeepingCentre(side, side).translated(0, -box.getHeight() * 0.04f),
+                juce::RectanglePlacement::centred);
+    return;
+  }
   const float size = glyphSize_ > 0 ? static_cast<float>(glyphSize_)
                                     : static_cast<float>(juce::roundToInt(box.getWidth() * 0.4f));
   // Local files carry a gear only when native could infer one from the file

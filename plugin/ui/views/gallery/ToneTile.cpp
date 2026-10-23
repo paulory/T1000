@@ -99,6 +99,10 @@ void ToneTile::setBlock(const ChainItem& block) {
   swap_.setIcon(block.tone.plugin ? Icon::ExternalLink : Icon::ArrowLeftRight);
   swap_.setHelpText(help::text(block.tone.plugin ? help::Key::openPluginEditor : help::Key::swapTone));
   image_.setTone(block.tone.image, block.tone.gear, block.tone.local, kGlyphSize);
+  image_.setArtwork(block.tone.plugin ? services().hostedPlugins.iconFor(block.tone.pluginPath, block.tone.title,
+                                                                         block.tone.user ? block.tone.user->username
+                                                                                         : juce::String())
+                                      : juce::Image());
   syncState();
 }
 

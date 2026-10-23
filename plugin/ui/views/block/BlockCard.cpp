@@ -281,6 +281,10 @@ void BlockCard::syncFromBlock() {
   normalizeWrap_.setMouseCursor(juce::MouseCursor::NormalCursor);
 
   image_.setTone(block_.tone.image, block_.tone.gear, block_.tone.local);
+  image_.setArtwork(isPlugin() ? services_.hostedPlugins.iconFor(block_.tone.pluginPath, block_.tone.title,
+                                                                 block_.tone.user ? block_.tone.user->username
+                                                                                  : juce::String())
+                               : juce::Image());
   const bool busy = modelBusy() || block_.loadFailed;
   image_.setAlpha(busy ? kImageBusyOpacity : 1.0f);
   loading_.setVisible(busy && !block_.loadFailed);

@@ -26,6 +26,9 @@ public:
   void setCornerRadius(float radius);
   // Inset energy glow composited over the art (screen blend).
   void setGlow(const Glow& glow);
+  // Local artwork drawn whole and centred on SURFACE instead of the glyph
+  // (a hosted plugin's app icon). An invalid image goes back to the glyph.
+  void setArtwork(const juce::Image& artwork);
 
   void paint(juce::Graphics& g) override;
   void resized() override { base_ = {}; }
@@ -42,6 +45,7 @@ private:
   int glyphSize_ = 0;
   float corner_ = 0.0f;
   juce::Image image_;
+  juce::Image artwork_;
   juce::Image base_, composited_;
   float baseScale_ = 0.0f;
   Glow glow_, compositedGlow_;

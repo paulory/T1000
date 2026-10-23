@@ -8,6 +8,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include <map>
 #include <memory>
 #include <string>
 
@@ -33,6 +34,10 @@ public:
   void openManager();
   // The plugin block's own editor window.
   void openEditor(const std::string& blockId);
+  // The plugin's icon: one in its own bundle, else the vendor's standalone
+  // app of the same name (macOS). Invalid when there is none. Cached.
+  juce::Image iconFor(const juce::String& pluginPath, const juce::String& name,
+                      const juce::String& vendor);
 
 private:
   class ManagerWindow;
@@ -46,6 +51,7 @@ private:
   Toast& toast_;
   std::unique_ptr<juce::FileChooser> chooser_;
   std::unique_ptr<ManagerWindow> manager_;
+  std::map<juce::String, juce::Image> icons_;
 
   JUCE_DECLARE_WEAK_REFERENCEABLE(HostedPlugins)
 };

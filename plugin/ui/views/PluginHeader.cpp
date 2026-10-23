@@ -15,7 +15,7 @@ constexpr int kPadX = 24;
 constexpr int kGroupGap = 40;  // between header items
 constexpr int kPairGap = 16;   // tight pairs (undo/redo)
 constexpr int kLogoWidth = 160;
-constexpr int kLogoHeight = 24;  // 160 * 32 / 210, rounded like the browser
+constexpr int kLogoHeight = 32;  // T1000 wordmark: height-limited, ~130 wide
 }  // namespace
 
 // The wordmark links to tone3000.com.
