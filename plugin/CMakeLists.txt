@@ -159,6 +159,9 @@ target_compile_definitions(NAM PRIVATE NAM_ENABLE_A2_FAST)
 # regen notes in design/app-icon-macos.svg.
 # iOS masks the icon itself (the springboard applies the squircle), so it wants
 # the full-bleed square like Windows, not the macOS artwork with baked-in margins.
+# T1000: macOS 26+ masks a full-bleed opaque square itself and puts any
+# other shape (transparent corners, baked-in margins) in a grey frame, so
+# icon-macos.png is the full-bleed square too.
 if(APPLE AND NOT T3K_IOS)
     set(_app_icon "${CMAKE_CURRENT_SOURCE_DIR}/icon/icon-macos.png")
 else()
