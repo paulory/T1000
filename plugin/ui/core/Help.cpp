@@ -80,7 +80,7 @@ std::map<Key, String> buildTable() {
   t[Key::gateRange] = knobDesktop("Range", "how deep the gate closes, 20-80 dB. 80: mute · 20: tame.");
   t[Key::pitch] = knobDesktop("Pitch Shift",
                               "transpose the input ±24 semitones. STEP off: whammy sweep. Right-click: advanced.");
-  t[Key::pitchFine] = knobDesktop("Fine", "fine-tune the pitch shift ±100 cents (100 cents = 1 semitone).");
+  t[Key::pitchFine] = knobDesktop("Tune", "tuning reference: where A4 lands, 415 to 466 Hz (440 Hz = standard; 432, 444...).");
   t[Key::pitchPower] = kTouch ? U("Pitch Power: pitch shift on/off. On adds latency.")
                               : U("Pitch Power: pitch shift on/off. On adds latency. Right-click: advanced.");
   t[Key::pitchStep] = U("STEP: snap the shift to whole semitones (transpose). Off: smooth sweep, like a whammy.");

@@ -47,7 +47,7 @@ constexpr SliderDefault kSliders[] = {
     // Pitch shift at 0 st (centre) with its deck at the defaults: tonality
     // Off (top), the 30 ms buffer (second of four detents).
     {"pitchSemitones", 0.5f},    {"pitchTonality", 1.0f},  {"pitchWindow", 1.0f / 3.0f},
-    {"pitchFine", 0.5f},
+    {"pitchTuneHz", 0.5f},
 };
 struct ToggleDefault {
   const char* id;

@@ -165,7 +165,7 @@ void TONE3000Processor::resolveParamRefs() {
   paramRefs.pitchStep = get("pitchStep");
   paramRefs.pitchTonality = get("pitchTonality");
   paramRefs.pitchWindow = get("pitchWindow");
-  paramRefs.pitchFine = get("pitchFine");
+  paramRefs.pitchFine = get("pitchTuneHz");
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout TONE3000Processor::createParameterLayout() {
@@ -368,11 +368,23 @@ juce::AudioProcessorValueTreeState::ParameterLayout TONE3000Processor::createPar
       juce::ParameterID{"pitchWindow", 43}, "pitchWindow", windows,
       static_cast<int>(PitchShift::kDefaultWindow),
       juce::AudioParameterChoiceAttributes().withAutomatable(false)));
-  // T1000: fine tune on top of the semitone shift, in cents (100 = one
-  // semitone), never quantised by STEP. 0 = no change.
-  layout.add(std::make_unique<juce::AudioParameterFloat>(
-      juce::ParameterID{"pitchFine", 44}, "pitchFine",
-      juce::NormalisableRange<float>(-100.0f, 100.0f), 0.0f, wholeUnitText("ct")));
+  // T1000: fine tune on top of the semitone shift, as a tuning reference:
+  // the frequency A4 lands on (440 Hz = no change; 432 Hz, 444 Hz...),
+  // never quantised by STEP. One semitone each way (415.3..466.2 Hz) on a
+  // log map, so noon is exactly 440 Hz.
+  {
+    const float lo = 440.0f * std::pow(2.0f, -1.0f / 12.0f);
+    const float hi = 440.0f * std::pow(2.0f, 1.0f / 12.0f);
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{"pitchTuneHz", 45}, "pitchTuneHz",
+        juce::NormalisableRange<float>(
+            lo, hi,
+            [](float start, float end, float norm) { return start * std::pow(end / start, norm); },
+            [](float start, float end, float hz) { return std::log(hz / start) / std::log(end / start); }),
+        440.0f,
+        juce::AudioParameterFloatAttributes().withLabel("Hz").withStringFromValueFunction(
+            [](float v, int) { return juce::String(v, 1); })));
+  }
 
   return layout;
 }
@@ -1194,7 +1206,7 @@ void TONE3000Processor::updateCachedParameters() {
   cachePitchEnabled = loadBool(paramRefs.pitchEnabled);
   const float semitones = paramRefs.pitchSemitones->load();
   cachePitch.semitones = (loadBool(paramRefs.pitchStep) ? std::round(semitones) : semitones) +
-                         paramRefs.pitchFine->load() / 100.0f;
+                         12.0f * std::log2(paramRefs.pitchFine->load() / 440.0f);
   const float tonalityHz = paramRefs.pitchTonality->load();
   cachePitch.tonalityHz = tonalityHz < PitchShift::kTonalityOffHz ? tonalityHz : 0.0f;
   cachePitch.window =

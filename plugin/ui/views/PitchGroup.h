@@ -42,7 +42,8 @@ private:
   Services& services_;
   DimGroup dim_;
   ParamKnob semitones_;
-  // T1000: fine tune in cents on top of the semitones (pitchFine).
+  // T1000: fine tune as an A4 reference in Hz on top of the semitones
+  // (pitchTuneHz; 440 = no change).
   ParamKnob fine_;
   ParamPowerButton power_;
   // The deck's STEP toggle decides whether the knob detents (see syncStep).

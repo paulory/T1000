@@ -32,11 +32,11 @@ Knob::Options semitoneKnob() {
 
 Knob::Options fineKnob() {
   Knob::Options o;
-  o.label = "Fine";
+  o.label = "Tune";
   o.size = theme::kKnobSizeSecondary;
   o.thumb = Knob::Thumb::secondary;
-  o.variant = Knob::Variant::bipolar;  // noon = 0 ct
-  o.scale = &scales::cents();
+  o.variant = Knob::Variant::bipolar;  // noon = A4 440 Hz
+  o.scale = &scales::tuneHz();
   o.defaultValue = 0.5f;
   o.help = help::Key::pitchFine;
   return o;
@@ -47,7 +47,7 @@ Knob::Options fineKnob() {
 PitchGroup::PitchGroup(Services& services)
     : services_(services),
       semitones_(services.backend, "pitchSemitones", semitoneKnob()),
-      fine_(services.backend, "pitchFine", fineKnob()),
+      fine_(services.backend, "pitchTuneHz", fineKnob()),
       power_(services.backend, "pitchEnabled", help::Key::pitchPower),
       step_(services.backend, "pitchStep"),
       deck_(services) {

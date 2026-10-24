@@ -114,20 +114,22 @@ inline const KnobScale& semitones() {
   return s;
 }
 
-// Pitch fine tune: bipolar cents, centre = 0, ±100 (one semitone), whole
-// cents with the sign spelled out ("+12 ct").
-inline const KnobScale& cents() {
+// Pitch tune: the A4 reference in Hz on a log map over one semitone each
+// way (415.3..466.2 Hz), noon = 440 Hz. Whole Hz read whole ("432 Hz"),
+// anything else to a tenth ("441.5 Hz").
+inline const KnobScale& tuneHz() {
   static const KnobScale s = [] {
     KnobScale c;
-    const auto ct = [](double n) { return -100 + n * 200; };
-    const auto text = [ct](double n) {
-      const int v = static_cast<int>(std::lround(ct(n)));
-      return (v > 0 ? "+" : "") + juce::String(v);
+    const double lo = 440.0 * std::pow(2.0, -1.0 / 12.0), hi = 440.0 * std::pow(2.0, 1.0 / 12.0);
+    const auto hz = [lo, hi](double n) { return lo * std::pow(hi / lo, n); };
+    const auto text = [hz](double n) {
+      const double v = hz(n);
+      return std::abs(v - std::round(v)) < 0.05 ? juce::String(static_cast<int>(std::round(v))) : labels::toFixed(v, 1);
     };
-    c.toDisplay = ct;
-    c.fromDisplay = [](double d) { return (d + 100) / 200; };
-    c.format = [text](double n) { return text(n) + " ct"; };
-    c.editText = [text](double n) { return text(n).trimCharactersAtStart("+"); };
+    c.toDisplay = hz;
+    c.fromDisplay = [lo, hi](double d) { return std::log(d / lo) / std::log(hi / lo); };
+    c.format = [text](double n) { return text(n) + " Hz"; };
+    c.editText = text;
     return c;
   }();
   return s;

@@ -1179,7 +1179,7 @@ private:
     std::atomic<float>* pitchStep = nullptr;
     std::atomic<float>* pitchTonality = nullptr;
     std::atomic<float>* pitchWindow = nullptr;
-    std::atomic<float>* pitchFine = nullptr;
+    std::atomic<float>* pitchFine = nullptr;  // "pitchTuneHz": A4 reference, Hz
   } paramRefs;
   void resolveParamRefs();
 
