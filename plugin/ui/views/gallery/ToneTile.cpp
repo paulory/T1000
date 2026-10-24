@@ -21,7 +21,7 @@ Knob::Options outKnobOptions() {
   o.label = "Out";
   o.size = theme::kKnobSizeSecondary;
   o.thumb = Knob::Thumb::secondary;
-  o.scale = &scales::gainDb();
+  o.scale = &scales::blockOutDb();
   o.defaultValue = 0.5f;
   o.help = help::Key::tileOut;
   o.labelBright = true;

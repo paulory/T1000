@@ -57,6 +57,29 @@ inline const KnobScale& gainDb() {
   return s;
 }
 
+// Block Out: like gainDb, but the very bottom of the travel is a full mute
+// (the processor's blockOutGain): the last 2% fades -23 dB down to silence,
+// and 0 reads "-inf dB".
+inline const KnobScale& blockOutDb() {
+  static const KnobScale s = [] {
+    KnobScale c = linear(-24, 24, "dB", 1);
+    constexpr double knee = 0.02;
+    const auto db = [](double n) {
+      if (n >= knee) return -24 + n * 48;
+      const double edgeGain = std::pow(10.0, (-24 + knee * 48) / 20.0) * n / knee;
+      return edgeGain > 0 ? 20.0 * std::log10(edgeGain) : -1000.0;
+    };
+    c.toDisplay = db;
+    c.format = [db](double n) {
+      return n <= 0.0005 ? juce::String("-inf dB") : labels::toFixed(db(n), 1) + " dB";
+    };
+    c.editText = [db](double n) { return n <= 0.0005 ? juce::String("-inf") : labels::toFixed(db(n), 1); };
+    c.fromDisplay = [](double d) { return d <= -60 ? 0.0 : (d + 24) / 48; };
+    return c;
+  }();
+  return s;
+}
+
 // Stereo balance trim: 0.5 = centred, ±12 dB per channel at the ends.
 inline const KnobScale& balanceDb() {
   static const KnobScale s = linear(-12, 12, "dB", 1);

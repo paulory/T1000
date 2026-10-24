@@ -72,7 +72,7 @@ BlockCard::BlockCard(Services& services, const ChainItem& block, bool namDownstr
       inMeter_(services.meters, MeterStore::blockInId(block.blockId), kRailMeterLength, /*vertical=*/true),
       outMeter_(services.meters, MeterStore::blockOutId(block.blockId), kRailMeterLength, /*vertical=*/true),
       in_(trimKnob("In", scales::gainDb(), 0.5f, help::Key::blockIn)),
-      out_(trimKnob("Out", scales::gainDb(), 0.5f, help::Key::blockOut)),
+      out_(trimKnob("Out", scales::blockOutDb(), 0.5f, help::Key::blockOut)),
       mix_(trimKnob("Mix", scales::percent(), 1.0f, help::Key::blockMix)),
       image_(services.images),
       meta_(services.images) {

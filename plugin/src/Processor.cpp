@@ -1520,8 +1520,18 @@ void TONE3000Processor::processChainOnBuffer(std::vector<std::unique_ptr<ChainBl
     const float irOffsetDb =
         (block->type == ChainBlockType::IR && !block->irIsLong) ? -18.0f : 0.0f;
     const float cabPadGain = juce::Decibels::decibelsToGain(irOffsetDb);
-    const float gainDb = (block->outputGainNormalized - 0.5f) * 48.0f;
-    block->outputGainSmoother.setTargetValue(juce::Decibels::decibelsToGain(gainDb));
+    // Out Gain: 0.5 = unity, ±24 dB, except the last 2% of the travel,
+    // which fades from -23 dB down to a full mute (T1000: knob at zero
+    // means silence; matches scales::blockOutDb in the UI).
+    float outGainLinear;
+    {
+      constexpr float kMuteKnee = 0.02f;
+      const float n = block->outputGainNormalized;
+      outGainLinear = n >= kMuteKnee
+                          ? juce::Decibels::decibelsToGain((n - 0.5f) * 48.0f)
+                          : juce::Decibels::decibelsToGain((kMuteKnee - 0.5f) * 48.0f) * (n / kMuteKnee);
+    }
+    block->outputGainSmoother.setTargetValue(outGainLinear);
     block->mixSmoother.setTargetValue(juce::jlimit(0.0f, 1.0f, block->mixNormalized));
 
     float blockOutputPeak = 0.0f;

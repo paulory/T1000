@@ -81,7 +81,9 @@ float maxAbsDiff(const std::vector<float>& a, const std::vector<float>& b, size_
 
 constexpr size_t kSkip = 0;  // no cross-run smoother drift here; see comment above
 constexpr double kUnityNorm = 0.5;    // 0 dB relative (gainDb formula's center)
-constexpr double kReducedNorm = 0.0;  // -24 dB relative: (0.0 - 0.5) * 48
+// T1000: the last 2% of the travel fades to a mute (see ZeroOutGainIsSilence),
+// so the dB-linear reference point is the edge of that knee: -23.04 dB.
+constexpr double kReducedNorm = 0.02;  // (0.02 - 0.5) * 48
 constexpr double kMix = 0.5;
 // Ratio between the two outputGain settings' linear gain. Derived from the
 // documented normalized->dB mapping alone (0.5 span == 48 dB), not from the
@@ -115,7 +117,7 @@ TEST(OutGainTest, OutGainAffectsFullSignal) {
   // A wet-only gain would attenuate roughly half the signal's energy (the
   // wet share), landing well under half the requested 24 dB; the fixed,
   // post-mix gain scales the whole combined signal, landing close to it.
-  EXPECT_NEAR(measuredDropDb, 24.0, 3.0)
+  EXPECT_NEAR(measuredDropDb, (kUnityNorm - kReducedNorm) * 48.0, 3.0)
       << "Out Gain isn't attenuating the full combined signal - looks wet-only again (issue #99)";
 }
 
@@ -247,4 +249,16 @@ TEST(OutGainTest, BypassFadeWithReducedGainNeverSteps) {
   // jump. 12 dB splits the two with margin on both sides.
   EXPECT_LT(maxStepDb, 12.0) << "power-off with reduced Out Gain steps at the skip boundary "
                                 "instead of gliding to unity dry";
+}
+
+// T1000: the bottom of the Out knob is a full mute, dry share included
+// (Out Gain scales the whole post-mix blend).
+TEST(OutGainTest, ZeroOutGainIsSilence) {
+  const auto [l, r] = runWithMixAndGain(0.5, 0.0);
+  float peak = 0.0f;
+  for (float v : l) peak = std::max(peak, std::abs(v));
+  for (float v : r) peak = std::max(peak, std::abs(v));
+  // Below -80 dB: what remains is the output DC blocker's tail still
+  // decaying from the warmup (about -100 dB), not the block.
+  EXPECT_LT(peak, 1e-4f) << "Out at zero must be silent";
 }
