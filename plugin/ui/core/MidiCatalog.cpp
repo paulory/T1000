@@ -23,6 +23,7 @@ const std::vector<MappableTarget>& mappableTargets() {
         // reported latency, a setting rather than a performance control.
         {"pitchEnabled", "Pitch Power", "Pitch Shift", K::toggle},
         {"pitchSemitones", "Pitch", "Pitch Shift", K::continuous},
+        {"pitchFine", "Pitch Fine", "Pitch Shift", K::continuous},
         {"pitchStep", "Pitch Step", "Pitch Shift", K::toggle},
         {"pitchTonality", "Pitch Tonality", "Pitch Shift", K::continuous},
         {"toneEqEnabled", "Tone Stack Power", "Tone Stack", K::toggle},

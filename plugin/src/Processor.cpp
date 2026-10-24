@@ -165,6 +165,7 @@ void TONE3000Processor::resolveParamRefs() {
   paramRefs.pitchStep = get("pitchStep");
   paramRefs.pitchTonality = get("pitchTonality");
   paramRefs.pitchWindow = get("pitchWindow");
+  paramRefs.pitchFine = get("pitchFine");
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout TONE3000Processor::createParameterLayout() {
@@ -367,6 +368,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout TONE3000Processor::createPar
       juce::ParameterID{"pitchWindow", 43}, "pitchWindow", windows,
       static_cast<int>(PitchShift::kDefaultWindow),
       juce::AudioParameterChoiceAttributes().withAutomatable(false)));
+  // T1000: fine tune on top of the semitone shift, in cents (100 = one
+  // semitone), never quantised by STEP. 0 = no change.
+  layout.add(std::make_unique<juce::AudioParameterFloat>(
+      juce::ParameterID{"pitchFine", 44}, "pitchFine",
+      juce::NormalisableRange<float>(-100.0f, 100.0f), 0.0f, wholeUnitText("ct")));
 
   return layout;
 }
@@ -1187,7 +1193,8 @@ void TONE3000Processor::updateCachedParameters() {
   // exactly on its step. The tonality knob's top end means off.
   cachePitchEnabled = loadBool(paramRefs.pitchEnabled);
   const float semitones = paramRefs.pitchSemitones->load();
-  cachePitch.semitones = loadBool(paramRefs.pitchStep) ? std::round(semitones) : semitones;
+  cachePitch.semitones = (loadBool(paramRefs.pitchStep) ? std::round(semitones) : semitones) +
+                         paramRefs.pitchFine->load() / 100.0f;
   const float tonalityHz = paramRefs.pitchTonality->load();
   cachePitch.tonalityHz = tonalityHz < PitchShift::kTonalityOffHz ? tonalityHz : 0.0f;
   cachePitch.window =

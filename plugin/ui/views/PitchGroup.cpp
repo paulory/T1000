@@ -30,15 +30,29 @@ Knob::Options semitoneKnob() {
   return o;
 }
 
+Knob::Options fineKnob() {
+  Knob::Options o;
+  o.label = "Fine";
+  o.size = theme::kKnobSizeSecondary;
+  o.thumb = Knob::Thumb::secondary;
+  o.variant = Knob::Variant::bipolar;  // noon = 0 ct
+  o.scale = &scales::cents();
+  o.defaultValue = 0.5f;
+  o.help = help::Key::pitchFine;
+  return o;
+}
+
 }  // namespace
 
 PitchGroup::PitchGroup(Services& services)
     : services_(services),
       semitones_(services.backend, "pitchSemitones", semitoneKnob()),
+      fine_(services.backend, "pitchFine", fineKnob()),
       power_(services.backend, "pitchEnabled", help::Key::pitchPower),
       step_(services.backend, "pitchStep"),
       deck_(services) {
   dim_.addAndMakeVisible(semitones_);
+  dim_.addAndMakeVisible(fine_);
   dim_.setOff(!power_.value(), false);
   power_.onValueChange = [this](bool on) { dim_.setOff(!on); };
   addAndMakeVisible(dim_);
@@ -47,7 +61,11 @@ PitchGroup::PitchGroup(Services& services)
   syncStep();
 
   // One gesture resets the whole effect, deck included.
-  semitones_.onReset = [this] { PitchDeckPanel::resetDeck(services_.backend); };
+  semitones_.onReset = [this] {
+    PitchDeckPanel::resetDeck(services_.backend);
+    fine_.binding().set(0.5f);
+  };
+  fine_.onLongPress = [this] { toggleDeck(); };
   // Touch-and-hold on the knob is the right-click of the platform.
   semitones_.onLongPress = [this] { toggleDeck(); };
 
@@ -87,9 +105,11 @@ void PitchGroup::toggleDeck() {
 
 void PitchGroup::resized() {
   const int baseline = getHeight() - Knob::kEditorOverflow;  // the label slot's bottom edge
-  dim_.setBounds(0, 0, theme::kKnobSizeSecondary, getHeight());
+  const int knobsW = 2 * theme::kKnobSizeSecondary + kGap;
+  dim_.setBounds(0, 0, knobsW, getHeight());
   semitones_.setTopLeftPosition(0, 0);
-  power_.setTopLeftPosition(theme::kKnobSizeSecondary + kGap, baseline - theme::kIconBoxSize + kChromeLift);
+  fine_.setTopLeftPosition(theme::kKnobSizeSecondary + kGap, 0);
+  power_.setTopLeftPosition(knobsW + kGap, baseline - theme::kIconBoxSize + kChromeLift);
 }
 
 }  // namespace t3k::ui

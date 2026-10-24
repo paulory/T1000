@@ -114,6 +114,25 @@ inline const KnobScale& semitones() {
   return s;
 }
 
+// Pitch fine tune: bipolar cents, centre = 0, ±100 (one semitone), whole
+// cents with the sign spelled out ("+12 ct").
+inline const KnobScale& cents() {
+  static const KnobScale s = [] {
+    KnobScale c;
+    const auto ct = [](double n) { return -100 + n * 200; };
+    const auto text = [ct](double n) {
+      const int v = static_cast<int>(std::lround(ct(n)));
+      return (v > 0 ? "+" : "") + juce::String(v);
+    };
+    c.toDisplay = ct;
+    c.fromDisplay = [](double d) { return (d + 100) / 200; };
+    c.format = [text](double n) { return text(n) + " ct"; };
+    c.editText = [text](double n) { return text(n).trimCharactersAtStart("+"); };
+    return c;
+  }();
+  return s;
+}
+
 // Pitch deck. The tonality limit rides a log map whose top end reads
 // "Off" (a pure shift; the processor treats the end value the same way);
 // the buffer is the four detents in PitchShift.h (20 / 30 / 40 / 60 ms),

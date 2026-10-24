@@ -22,8 +22,8 @@ namespace t3k::ui {
 
 class PitchGroup : public juce::Component, public SecondaryPressTarget {
 public:
-  // Knob + the plate's knob-to-companion gap + the power box, like Gate.
-  static constexpr int kWidth = theme::kKnobSizeSecondary + 10 + theme::kIconBoxSize;
+  // Pitch knob + Fine knob + the plate's knob-to-companion gaps + the power box.
+  static constexpr int kWidth = 2 * theme::kKnobSizeSecondary + 2 * 10 + theme::kIconBoxSize;
   static int height() { return Knob::heightFor(theme::kKnobSizeSecondary); }
 
   explicit PitchGroup(Services& services);
@@ -42,6 +42,8 @@ private:
   Services& services_;
   DimGroup dim_;
   ParamKnob semitones_;
+  // T1000: fine tune in cents on top of the semitones (pitchFine).
+  ParamKnob fine_;
   ParamPowerButton power_;
   // The deck's STEP toggle decides whether the knob detents (see syncStep).
   ParamBinding step_;
