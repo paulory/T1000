@@ -29,7 +29,7 @@ String alt(const char* gesture) { return chord("\u2325", "Alt", gesture); }
 const String& knobKeys() {
   static const String keys =
       kTouch ? U("drag up or down: adjust · double tap: reset · tap the name: type")
-             : shift("drag") + U(": fine · double-click: type · ") + alt("click") + ": reset";
+             : shift("drag") + U(": fine · double-click: reset · click the name: type");
   return keys;
 }
 

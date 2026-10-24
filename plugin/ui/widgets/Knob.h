@@ -6,7 +6,8 @@
 // - Drag vertically to adjust; hold Shift for 8x finer control (mid-drag too).
 // - The label swaps to a live value readout while dragging (debounced so a
 //   quick tap never flashes it) and lingers briefly after release.
-// - Double-click opens inline text entry in real units (Enter commits,
+// - Double-click resets to the default (or the middle); clicking the label
+//   opens inline text entry in real units (Enter commits,
 //   Escape cancels, blur commits).
 // - Alt/Option-click resets to the default value (when one is declared).
 // - No scroll-wheel support on purpose: knobs sit inside the horizontally

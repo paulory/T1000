@@ -130,8 +130,10 @@ void Knob::emit(float v) {
 }
 
 bool Knob::resetToDefault() {
-  if (!options_.defaultValue) return false;
-  const float fallback = *options_.defaultValue;
+  // The declared default (0 dB, 440 Hz, 0 st...), or the middle of the
+  // travel for a knob that declares none.
+  const float fallback = options_.defaultValue ? *options_.defaultValue
+                                               : snapToStep(0.5f * (options_.min + options_.max));
   live_ = fallback;
   emit(fallback);
   if (onReset) onReset();
@@ -225,19 +227,19 @@ void Knob::endDrag() {
 void Knob::mouseUp(const juce::MouseEvent& e) {
   holdTimer_.cancel();
   endDrag();
-  // Touch route into the type-in editor: tap the label (double tap is taken
-  // by the reset). Desktop keeps the double-click on the face and ignores
-  // presses here.
-  if (touchPress_ && !pressTravelled_ && editor_ == nullptr &&
+  // Type-in editor: click (or tap) the label. A double-click / double tap
+  // on the face is the reset.
+  if (!pressTravelled_ && editor_ == nullptr &&
       labelBounds().contains(pressOrigin_.toInt()) && labelBounds().contains(e.getPosition()))
     openEditor();
 }
 
 void Knob::mouseDoubleClick(const juce::MouseEvent& e) {
-  // A touch double tap resets (see mouseDown); it must not also open the editor.
+  // T1000: double-click resets (to the default, or the middle). A touch
+  // double tap already reset in mouseDown.
   if (e.source.isTouch() || !faceBounds().contains(e.getPosition())) return;
   endDrag();
-  openEditor();
+  resetToDefault();
 }
 
 // Keyboard / screen reader
